@@ -18,9 +18,8 @@ import { connect } from 'react-redux'
 
 import FileUpload from '../components/FileUpload/FileUpload'
 import Button from '../components/Button/Button'
-import getConfig from 'next/config'
 
-import css from './select.scss'
+import css from './select.module.scss'
 import ContextModal from '../components/ContextModal/ContextModal'
 import ModalContext from '../components/ModalContext/ModalContext'
 import SampleCollections from '../components/SampleCollections/SampleCollections'
@@ -28,11 +27,8 @@ import SampleCollections from '../components/SampleCollections/SampleCollections
 Select.propTypes = {
   dispatch: PropTypes.func,
 }
-const {
-  publicRuntimeConfig:{
-    isROMode
-  }
-} = getConfig();
+
+const isROMode = process.env.NEXT_PUBLIC_IS_RO_MODE || 'false';
 function Select({ dispatch }) {
   if(isROMode === 'true'){
     const [modal, setModal] = React.useState(false)

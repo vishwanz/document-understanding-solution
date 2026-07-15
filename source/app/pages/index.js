@@ -14,13 +14,13 @@
 
 import React, { useState, useCallback } from "react";
 import Router from "next/router";
-import { Auth } from "aws-amplify";
+import { signIn, confirmSignIn } from "aws-amplify/auth";
 
 import Button from "../components/Button/Button";
 import FormInput from "../components/FormInput/FormInput";
 import Loading from "../components/Loading/Loading";
 
-import css from "./login.scss";
+import css from "./login.module.scss";
 
 Login.getInitialProps = function() {
   return {
@@ -53,18 +53,18 @@ export default function Login() {
       e.preventDefault();
       setIsLoading(true);
       try {
-        const userInit = await Auth.signIn(username, password);
-        if (userInit && userInit.challengeName === "NEW_PASSWORD_REQUIRED") {
+        const result = await signIn({ username, password });
+        if (result.nextStep && result.nextStep.signInStep === "CONFIRM_SIGN_IN_WITH_NEW_PASSWORD_REQUIRED") {
           setCredentials({
             passwordChangeRequired: true,
-            userInit: userInit
+            userInit: result
           });
           setIsLoading(false);
-        } else {
-          userInit.signInUserSession && Router.push("/home");
+        } else if (result.isSignedIn) {
+          Router.push("/home");
         }
-      } catch ({ message }) {
-        setError(message);
+      } catch (err) {
+        setError(err.message || "Login failed");
         setIsLoading(false);
       }
     },
@@ -76,10 +76,12 @@ export default function Login() {
       e.preventDefault();
       setIsLoading(true);
       try {
-        const user = await Auth.completeNewPassword(userInit, newPassword);
-        user.signInUserSession && Router.push("/home");
-      } catch ({ message }) {
-        setError(message);
+        const result = await confirmSignIn({ challengeResponse: newPassword });
+        if (result.isSignedIn) {
+          Router.push("/home");
+        }
+      } catch (err) {
+        setError(err.message || "Password reset failed");
         setIsLoading(false);
       }
     },

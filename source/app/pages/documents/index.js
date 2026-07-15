@@ -17,7 +17,7 @@ import PropTypes from 'prop-types'
 import classNames from 'classnames'
 import { connect, useDispatch } from 'react-redux'
 import { useInView } from 'react-intersection-observer'
-import { distanceInWordsToNow, distanceInWords } from 'date-fns'
+import { formatDistanceToNow, formatDistance } from 'date-fns'
 import Router from "next/router";
 import { reject, isNil } from 'ramda'
 
@@ -58,7 +58,7 @@ import { getSelectedTrackId, getSelectedSearch } from '../../store/ui/selectors'
 
 import { makeDocumentLink } from '../../utils/link-generators'
 
-import css from './documents.scss'
+import css from './documents.module.scss'
 import SearchBar from '../../components/SearchBar/SearchBar'
 import { setHeaderProps } from '../../store/ui/actions'
 import Link from 'next/link'
@@ -121,9 +121,9 @@ function Documents({
 
   let files = documents.map(
     ({ documentId, documentName, documentStatus, documentCreatedOn, documentCompletedOn }) => {
-      const uploadedTime = distanceInWordsToNow(`${documentCreatedOn}Z`, { addSuffix: true })
+      const uploadedTime = formatDistanceToNow(new Date(`${documentCreatedOn}Z`), { addSuffix: true })
       const processedTime =
-        documentCompletedOn && distanceInWords(`${documentCreatedOn}Z`, `${documentCompletedOn}Z`)
+        documentCompletedOn && formatDistance(new Date(`${documentCreatedOn}Z`), new Date(`${documentCompletedOn}Z`))
       return {
         id: documentId,
         title: documentName,

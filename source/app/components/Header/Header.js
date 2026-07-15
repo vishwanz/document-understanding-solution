@@ -17,7 +17,7 @@ import { connect } from 'react-redux'
 import Link from 'next/link'
 import PropTypes from 'prop-types'
 import Router from 'next/router'
-import { Auth } from 'aws-amplify'
+import { signOut } from 'aws-amplify/auth'
 import cs from 'classnames'
 
 import Button from '../Button/Button'
@@ -25,7 +25,7 @@ import LinkWithClickHandler from '../LinkWithClickHandler/LinkWithClickHandler'
 
 import { getHeaderProps } from '../../store/ui/selectors'
 
-import css from './Header.scss'
+import css from './Header.module.scss'
 import { clearSearchQuery, setSearchPersona } from '../../store/entities/meta/actions'
 
 Header.propTypes = {
@@ -124,6 +124,6 @@ export default connect(function mapStateToProps(state, { ...originalProps }) {
 
 async function handleLogoutClick(e) {
   e.preventDefault()
-  await Auth.signOut({ global: true })
+  await signOut({ global: true })
   Router.push('/')
 }

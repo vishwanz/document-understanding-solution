@@ -15,8 +15,9 @@
 import { createAction } from "redux-actions";
 import { either, isEmpty, isNil, lensPath, reject, view } from "ramda";
 import { normalize } from "normalizr";
-import { API, Storage, Auth } from "aws-amplify";
-import uuid from "uuid/v4";
+import { fetchAuthSession } from "aws-amplify/auth";
+import { downloadData, getUrl } from "aws-amplify/storage";
+import { v4 as uuid } from "uuid";
 
 import {
   SUBMIT_DOCUMENTS,
@@ -28,6 +29,51 @@ import {
 } from "../../../constants/action-types";
 import { documentsSchema, documentSchema } from "./data";
 
+const API_GATEWAY = process.env.NEXT_PUBLIC_API_GATEWAY || "";
+const REGION = process.env.NEXT_PUBLIC_REGION || "";
+const API_BASE_URL = `https://${API_GATEWAY}.execute-api.${REGION}.amazonaws.com/prod/`;
+
+async function getAuthToken() {
+  const session = await fetchAuthSession();
+  return session.tokens?.idToken?.toString() || "";
+}
+
+async function apiGet(path, queryParams = {}) {
+  const token = await getAuthToken();
+  const qs = new URLSearchParams(queryParams).toString();
+  const url = `${API_BASE_URL}${path}${qs ? `?${qs}` : ""}`;
+  const response = await fetch(url, {
+    method: "GET",
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  return { data: await response.json() };
+}
+
+async function apiPost(path, body = {}) {
+  const token = await getAuthToken();
+  const url = `${API_BASE_URL}${path}`;
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(body)
+  });
+  return { data: await response.json() };
+}
+
+async function apiDelete(path, queryParams = {}) {
+  const token = await getAuthToken();
+  const qs = new URLSearchParams(queryParams).toString();
+  const url = `${API_BASE_URL}${path}${qs ? `?${qs}` : ""}`;
+  const response = await fetch(url, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  return { data: await response.json() };
+}
+
 const lensNextToken = lensPath(["data", "nextToken"]);
 const lensDocumentsTotal = lensPath(["data", "Total"]);
 const lensDocumentsData = lensPath(["data", "documents"]);
@@ -36,17 +82,9 @@ const lensDocumentData = lensPath(["data"]);
 export const submitDocument = createAction(
   SUBMIT_DOCUMENT,
   async ({ sample, key }) => {
-    const response = await API.post("TextractDemoTextractAPI", "document", {
-      headers: {
-        Authorization: `Bearer ${(await Auth.currentSession())
-          .getIdToken()
-          .getJwtToken()}`
-      },
-      response: true,
-      body: {
-        sample: !!sample,
-        key
-      }
+    const response = await apiPost("document", {
+      sample: !!sample,
+      key
     });
 
     const data = view(lensDocumentData, response);
@@ -57,16 +95,8 @@ export const submitDocument = createAction(
 export const submitDocuments = createAction(
   SUBMIT_DOCUMENTS,
   async ({ objects }) => {
-    const response = await API.post("TextractDemoTextractAPI", "document", {
-      headers: {
-        Authorization: `Bearer ${(await Auth.currentSession())
-          .getIdToken()
-          .getJwtToken()}`
-      },
-      response: true,
-      body: {
-        objects
-      }
+    const response = await apiPost("document", {
+      objects
     });
 
     const data = view(lensDocumentData, response);
@@ -80,18 +110,10 @@ export const submitDocuments = createAction(
 export const fetchDocuments = createAction(
   FETCH_DOCUMENTS,
   async ({ nextToken: nexttoken } = {}) => {
-    const response = await API.get("TextractDemoTextractAPI", "documents", {
-      headers: {
-        Authorization: `Bearer ${(await Auth.currentSession())
-          .getIdToken()
-          .getJwtToken()}`
-      },
-      response: true,
-      queryStringParameters: reject(either(isNil, isEmpty), {
-        nexttoken,
-        type: "user"
-      })
-    });
+    const response = await apiGet("documents", reject(either(isNil, isEmpty), {
+      nexttoken,
+      type: "user"
+    }));
     const documentsNextToken = view(lensNextToken, response) || null;
     const documentsTotal = view(lensDocumentsTotal, response);
     const documents = view(lensDocumentsData, response).map(document => ({
@@ -107,17 +129,7 @@ export const fetchDocuments = createAction(
 export const fetchSingleDocument = createAction(
   FETCH_DOCUMENT,
   async documentid => {
-    const response = await API.get("TextractDemoTextractAPI", "document", {
-      headers: {
-        Authorization: `Bearer ${(await Auth.currentSession())
-          .getIdToken()
-          .getJwtToken()}`
-      },
-      response: true,
-      queryStringParameters: {
-        documentid
-      }
-    });
+    const response = await apiGet("document", { documentid });
 
     const document = view(lensDocumentData, response);
 
@@ -129,17 +141,7 @@ export const fetchSingleDocument = createAction(
  * Get document from TextractDemoTextractAPI
  */
 export const fetchDocument = createAction(FETCH_DOCUMENT, async documentid => {
-  const response = await API.get("TextractDemoTextractAPI", "document", {
-    headers: {
-      Authorization: `Bearer ${(await Auth.currentSession())
-        .getIdToken()
-        .getJwtToken()}`
-    },
-    response: true,
-    queryStringParameters: {
-      documentid
-    }
-  });
+  const response = await apiGet("document", { documentid });
 
   const document = view(lensDocumentData, response);
   const { documentId, objectName, bucketName } = document;
@@ -155,42 +157,27 @@ export const fetchDocument = createAction(FETCH_DOCUMENT, async documentid => {
   const comprehendResponsePath = `${resultDirectory}/comprehend/comprehendEntities.json` 
   
   
-  // Get a pre-signed URL for the original document upload
+  // Download files from S3 using Amplify v6 downloadData
   const [documentData, searchablePdfData] = await Promise.all([
-    Storage.get(documentPublicSubPath, {
-      bucket: bucketName,
-      download: true
-    }),
-    Storage.get(`${resultDirectory}/${fileNameWithoutExtension}-searchable.pdf`, {
-      download: true
-    })
+    downloadData({ path: `public/${documentPublicSubPath}` }).result,
+    downloadData({ path: `public/${resultDirectory}/${fileNameWithoutExtension}-searchable.pdf` }).result
   ]);
 
-  const documentBlob = new Blob([documentData.Body], {
-    type: documentData.contentType
-  });
-  const searchablePdfBlob = new Blob([searchablePdfData.Body], {
-    type: "application/pdf"
-  });
+  const documentBlob = await documentData.body.blob();
+  const searchablePdfBlob = await searchablePdfData.body.blob();
 
   // Get the raw textract response data from a json file on S3
-  const s3Response = await Storage.get(textractResponsePath, {
-    download: true
-  });
-  const s3ResponseText = await s3Response.Body?.text()
+  const s3Response = await downloadData({ path: `public/${textractResponsePath}` }).result;
+  const s3ResponseText = await (await s3Response.body.blob()).text();
   const textractResponse = JSON.parse(s3ResponseText);
 
   // Get the raw comprehend medical response data from a json file on S3
-  const s3ComprehendMedicalResponse = await Storage.get(comprehendMedicalResponsePath, {
-    download: true
-  });
-  const s3ComprehendMedicalResponseText = await s3ComprehendMedicalResponse.Body?.text()
+  const s3ComprehendMedicalResponse = await downloadData({ path: `public/${comprehendMedicalResponsePath}` }).result;
+  const s3ComprehendMedicalResponseText = await (await s3ComprehendMedicalResponse.body.blob()).text();
   const comprehendMedicalRespone = JSON.parse(s3ComprehendMedicalResponseText);
   // Get the raw comprehend response data from a json file on S3
-  const s3ComprehendResponse = await Storage.get(comprehendResponsePath, {
-    download: true
-  });
-  const s3ComprehendResponseText = await s3ComprehendResponse.Body?.text()
+  const s3ComprehendResponse = await downloadData({ path: `public/${comprehendResponsePath}` }).result;
+  const s3ComprehendResponseText = await (await s3ComprehendResponse.body.blob()).text();
   const comprehendRespone = JSON.parse(s3ComprehendResponseText);
 
   return normalize(
@@ -211,17 +198,7 @@ export const fetchDocument = createAction(FETCH_DOCUMENT, async documentid => {
 });
 
 export const deleteDocument = createAction(FETCH_DOCUMENT, async documentid => {
-  const response = await API.del("TextractDemoTextractAPI", "document", {
-    headers: {
-      Authorization: `Bearer ${(await Auth.currentSession())
-        .getIdToken()
-        .getJwtToken()}`
-    },
-    response: true,
-    queryStringParameters: {
-      documentid
-    }
-  });
+  const response = await apiDelete("document", { documentid });
 
   return normalize(
     {

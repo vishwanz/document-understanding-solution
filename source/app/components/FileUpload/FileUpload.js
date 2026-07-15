@@ -15,11 +15,10 @@
 import React, { useCallback, useEffect, useState, Fragment } from 'react'
 import { connect } from 'react-redux'
 import classNames from 'classnames'
-import { Storage } from 'aws-amplify'
+import { uploadData, list } from 'aws-amplify/storage'
 import { useDropzone } from 'react-dropzone'
 import { format } from 'date-fns'
-import uuid from "uuid/v4";
-import getConfig from "next/config";
+import { v4 as uuid } from "uuid";
 
 import Button from '../Button/Button'
 import Modal from '../Modal/Modal'
@@ -30,13 +29,9 @@ import CameraCapture from '../CameraCapture/CameraCapture'
 import { submitDocument } from '../../store/entities/documents/actions'
 import { clearSearchQuery } from '../../store/entities/meta/actions'
 
-import css from './FileUpload.scss'
+import css from './FileUpload.module.scss'
 
-const {
-  publicRuntimeConfig:{
-    isROMode
-  }
-} = getConfig();
+const isROMode = process.env.NEXT_PUBLIC_IS_RO_MODE || 'false';
 
 function FileUpload({ dispatch }) {
   const [canUseCamera, setCanUseCamera] = useState({})
@@ -291,8 +286,8 @@ else {
 export default connect()(FileUpload)
 
 async function isUUIdPresentInS3(documentUUID){
-  var s3ListPromise = Storage.list(`${documentUUID}/`)
-      .then((result) => {return result});
+  var s3ListPromise = list({ path: `public/${documentUUID}/` })
+      .then((result) => {return result.items});
   let s3Result = await s3ListPromise
   return s3Result.length > 0
 }
@@ -350,13 +345,17 @@ function uploadFiles({ fileNames = [], files = {}, onSuccess, onError, onProgres
     getUniqueDocumentId()
       .then((result) => {   
         const key = [result, fileName].join('/')
-        Storage.put(key, file, {
-          progressCallback(progress) {
-            onProgress({ progress, fileName, file })
-          },
-        })
+        uploadData({
+          path: `public/${key}`,
+          data: file,
+          options: {
+            onProgress(progress) {
+              onProgress({ progress: { loaded: progress.transferredBytes, total: progress.totalBytes }, fileName, file })
+            },
+          }
+        }).result
           .then(result => {
-            return onSuccess({ result, fileName, file })
+            return onSuccess({ result: { key }, fileName, file })
           })
           .catch(error => {
             onError({ error, fileName, file })

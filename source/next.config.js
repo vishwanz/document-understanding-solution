@@ -12,35 +12,39 @@
  *  and limitations under the License.                                                                                *
  *********************************************************************************************************************/
 
-const withSass = require('@zeit/next-sass')
+const dotenv = require('dotenv')
 
 // Environment configs
-const {
-  parsed: {
-    APIGateway,
-    FileBucketName: bucket,
-    IdentityPoolId: identityPoolId,
-    region,
-    UserPoolClientId: userPoolWebClientId,
-    UserPoolId: userPoolId,
-    isROMode
-  },
-} = require('dotenv').config()
+const envResult = dotenv.config()
+const parsed = envResult.parsed || {}
 
-// Configs passed to next.js
-module.exports = withSass({
-  publicRuntimeConfig: {
-    APIGateway,
-    bucket,
-    identityPoolId,
-    region,
-    userPoolWebClientId,
-    userPoolId,
-    isROMode
+const {
+  APIGateway = '',
+  FileBucketName: bucket = '',
+  IdentityPoolId: identityPoolId = '',
+  region = '',
+  UserPoolClientId: userPoolWebClientId = '',
+  UserPoolId: userPoolId = '',
+  isROMode = 'false'
+} = parsed
+
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  env: {
+    NEXT_PUBLIC_API_GATEWAY: APIGateway,
+    NEXT_PUBLIC_BUCKET: bucket,
+    NEXT_PUBLIC_IDENTITY_POOL_ID: identityPoolId,
+    NEXT_PUBLIC_REGION: region,
+    NEXT_PUBLIC_USER_POOL_WEB_CLIENT_ID: userPoolWebClientId,
+    NEXT_PUBLIC_USER_POOL_ID: userPoolId,
+    NEXT_PUBLIC_IS_RO_MODE: isROMode,
   },
-  cssModules: true,
-  cssLoaderOptions: {
-    importLoaders: 1,
-    localIdentName: '[local]-[hash:base64:5]',
+  sassOptions: {
+    includePaths: ['./app/styles'],
   },
-})
+  images: {
+    unoptimized: true,
+  },
+}
+
+module.exports = nextConfig

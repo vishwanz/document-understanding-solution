@@ -18,7 +18,7 @@ import { connect } from 'react-redux'
 import { reject, either, isNil, isEmpty, groupWith } from 'ramda'
 import queryString from 'query-string'
 import cs from 'classnames'
-import { Storage } from 'aws-amplify'
+import { downloadData, getUrl } from 'aws-amplify/storage'
 
 import Loading from '../../components/Loading/Loading'
 import DocumentViewer from '../../components/DocumentViewer/DocumentViewer'
@@ -57,7 +57,7 @@ import {
 
 
 
-import css from './view.scss'
+import css from './view.module.scss'
 import Button from '../../components/Button/Button'
 import KeyValueList from '../../components/KeyValueList/KeyValueList'
 import RawTextLines from '../../components/RawTextLines/RawTextLines'
@@ -146,34 +146,26 @@ function Document({ currentPageNumber, dispatch, id, document, pageTitle, search
 
   const downloadKV = useCallback(async () => {
     const { resultDirectory } = document
-    const url = await Storage.get(`${resultDirectory}/textract/page-${currentPageNumber}-forms.csv`, {
-      expires: 300,
-    })
-    window.open(url)
+    const result = await getUrl({ path: `public/${resultDirectory}/textract/page-${currentPageNumber}-forms.csv`, options: { expiresIn: 300 } })
+    window.open(result.url.toString())
   }, [currentPageNumber, document])
 
   const downloadEntities = useCallback(async () => {
     const { resultDirectory } = document
-    const url = await Storage.get(`${resultDirectory}/comprehend/comprehendEntities.json`, {
-      expires: 300,
-    })
-    window.open(url)
+    const result = await getUrl({ path: `public/${resultDirectory}/comprehend/comprehendEntities.json`, options: { expiresIn: 300 } })
+    window.open(result.url.toString())
   }, [ document])
 
   const downloadMedicalEntities = useCallback(async () => {
     const { resultDirectory } = document
-    const url = await Storage.get(`${resultDirectory}/comprehend/comprehendMedicalEntities.json`, {
-      expires: 300,
-    })
-    window.open(url)
+    const result = await getUrl({ path: `public/${resultDirectory}/comprehend/comprehendMedicalEntities.json`, options: { expiresIn: 300 } })
+    window.open(result.url.toString())
   }, [ document])
 
   const downloadMedicalICD10Ontologies = useCallback(async () => {
     const { resultDirectory } = document
-    const url = await Storage.get(`${resultDirectory}/comprehend/comprehendMedicalICD10.json`, {
-      expires: 300,
-    })
-    window.open(url)
+    const result = await getUrl({ path: `public/${resultDirectory}/comprehend/comprehendMedicalICD10.json`, options: { expiresIn: 300 } })
+    window.open(result.url.toString())
   }, [ document])
 
   const redactMatches = useCallback(async () => {

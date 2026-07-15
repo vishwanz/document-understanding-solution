@@ -14,50 +14,64 @@
 
 import { createAction } from "redux-actions";
 import { normalize } from "normalizr";
-import { API, Auth } from "aws-amplify";
+import { fetchAuthSession } from "aws-amplify/auth";
 
 import { ENABLE_KENDRA } from '../../../constants/configs'
 import { SEARCH, CLEAR_SEARCH_RESULTS, SUBMIT_FEEDBACK } from "../../../constants/action-types";
 import { searchResultsSchema, kendraResultsSchema,kendraFilteredResultsSchema } from "./data";
 
+const API_GATEWAY = process.env.NEXT_PUBLIC_API_GATEWAY || "";
+const REGION = process.env.NEXT_PUBLIC_REGION || "";
+const API_BASE_URL = `https://${API_GATEWAY}.execute-api.${REGION}.amazonaws.com/prod/`;
+
+async function getAuthToken() {
+  const session = await fetchAuthSession();
+  return session.tokens?.idToken?.toString() || "";
+}
+
+async function apiGet(path, queryParams = {}) {
+  const token = await getAuthToken();
+  const qs = new URLSearchParams(queryParams).toString();
+  const url = `${API_BASE_URL}${path}${qs ? `?${qs}` : ""}`;
+  const response = await fetch(url, {
+    method: "GET",
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  return { data: await response.json() };
+}
+
+async function apiPost(path, body = {}) {
+  const token = await getAuthToken();
+  const url = `${API_BASE_URL}${path}`;
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(body)
+  });
+  return { data: await response.json() };
+}
+
 /**
  * Get documents from TextractDemoTextractAPI
  */
 export const search = createAction(SEARCH, async params => {
-  const headers = {
-    Authorization: `Bearer ${(await Auth.currentSession())
-      .getIdToken()
-      .getJwtToken()}`
-  }
-
   const [ esResponse, kendraResponse, kendraFilteredResponse ] = await Promise.all([
-    API.get("TextractDemoTextractAPI", "search", {
-      headers,
-      response: true,
-      queryStringParameters: { ...params }
-    }),
+    apiGet("search", { ...params }),
 
-    ENABLE_KENDRA ? API.post("TextractDemoTextractAPI", "searchkendra", {
-      headers,
-      response: true,
-      queryStringParameters: {},
-      body: {
-        query: params.k,
-        pageNumber: 1,
-        pageSize: 10
-      }
+    ENABLE_KENDRA ? apiPost("searchkendra", {
+      query: params.k,
+      pageNumber: 1,
+      pageSize: 10
     }) : null,
 
-    ENABLE_KENDRA && params.persona ? API.post("TextractDemoTextractAPI", "searchkendra", {
-      headers,
-      response: true,
-      queryStringParameters: {},
-      body: {
-        query: params.k,
-        tag: params.persona,
-        pageNumber: 1,
-        pageSize: 10
-      }
+    ENABLE_KENDRA && params.persona ? apiPost("searchkendra", {
+      query: params.k,
+      tag: params.persona,
+      pageNumber: 1,
+      pageSize: 10
     }) : null
   ]);
 
@@ -96,18 +110,10 @@ export const search = createAction(SEARCH, async params => {
 });
 
 export const submitKendraFeedback = createAction(SUBMIT_FEEDBACK, async ({ relevance, queryId, resultId }) => {
-  const response = await API.post("TextractDemoTextractAPI", "feedbackkendra", {
-    headers: {
-      Authorization: `Bearer ${(await Auth.currentSession())
-        .getIdToken()
-        .getJwtToken()}`
-    },
-    response: true,
-    body: {
-      relevance,
-      queryId,
-      resultId
-    }
+  const response = await apiPost("feedbackkendra", {
+    relevance,
+    queryId,
+    resultId
   });
 })
 
