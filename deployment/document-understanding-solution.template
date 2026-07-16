@@ -11,6 +11,8 @@
 # express or implied. See the License for the specific language governing
 # permissions and limitations under the License.
 
+### test
+
 Description: "(SO0084) - The AWS CloudFormation template for deployment of the document-understanding-solution. Version %%VERSION%%"
 
 Parameters:
