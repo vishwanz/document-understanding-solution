@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>document-understanding-solution - Modernization Readiness Analysis Report</title>
+<style>
+:root{--bg:#0f172a;--surface:#1e293b;--surface2:#334155;--text:#e2e8f0;--text-muted:#94a3b8;--accent:#3b82f6;--green:#22c55e;--yellow:#eab308;--orange:#f97316;--red:#ef4444;--border:#475569}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;padding:2rem}
+.container{max-width:1200px;margin:0 auto}
+h1{font-size:1.5rem;margin-bottom:0.25rem}
+h2{font-size:1.25rem;margin:2rem 0 1rem;border-bottom:1px solid var(--border);padding-bottom:0.5rem}
+h3{font-size:1.1rem;margin:1.5rem 0 0.75rem}
+.subtitle{color:var(--text-muted);font-size:0.875rem;margin-bottom:2rem}
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin:1.5rem 0}
+.card{background:var(--surface);border-radius:8px;padding:1.25rem;text-align:center}
+.card-value{font-size:2rem;font-weight:700}
+.card-label{color:var(--text-muted);font-size:0.8rem;text-transform:uppercase;margin-top:0.25rem}
+.card-high .card-value{color:var(--red)}
+.card-medium .card-value{color:var(--orange)}
+.card-low .card-value{color:var(--yellow)}
+.card-total .card-value{color:var(--accent)}
+table{width:100%;border-collapse:collapse;margin:1rem 0;font-size:0.875rem}
+th,td{padding:0.6rem 0.75rem;text-align:left;border-bottom:1px solid var(--border)}
+th{background:var(--surface);color:var(--text-muted);font-weight:600;text-transform:uppercase;font-size:0.75rem}
+td{background:var(--surface2)}
+.badge{display:inline-block;padding:0.15rem 0.5rem;border-radius:4px;font-size:0.7rem;font-weight:700;text-transform:uppercase}
+.badge-high{background:rgba(239,68,68,0.2);color:var(--red)}
+.badge-medium{background:rgba(249,115,22,0.2);color:var(--orange)}
+.badge-low{background:rgba(234,179,8,0.2);color:var(--yellow)}
+.badge-ready{background:rgba(34,197,94,0.2);color:var(--green)}
+.badge-critical{background:rgba(239,68,68,0.2);color:var(--red)}
+.badge-needs-work{background:rgba(249,115,22,0.2);color:var(--orange)}
+.finding-card{background:var(--surface);border-radius:8px;padding:1.25rem;margin:1rem 0;border-left:4px solid var(--border)}
+.finding-card.high{border-left-color:var(--red)}
+.finding-card.medium{border-left-color:var(--orange)}
+.finding-card.low{border-left-color:var(--yellow)}
+.finding-title{font-weight:600;margin-bottom:0.5rem;display:flex;align-items:center;gap:0.5rem}
+.finding-category{color:var(--text-muted);font-size:0.8rem;margin-bottom:0.75rem}
+.finding-section{margin:0.75rem 0}
+.finding-section-title{font-size:0.75rem;text-transform:uppercase;color:var(--text-muted);font-weight:600;margin-bottom:0.25rem}
+.executive{background:var(--surface);border-radius:8px;padding:1.5rem;margin:1.5rem 0}
+.tier-badge{font-size:1.1rem;font-weight:700;margin:0.5rem 0}
+.tier-remediation{color:var(--orange)}
+.tech-table td:first-child{font-weight:600;width:120px}
+.footer{text-align:center;color:var(--text-muted);font-size:0.75rem;margin-top:3rem;padding-top:1rem;border-top:1px solid var(--border)}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>document-understanding-solution - Modernization Readiness Analysis Report</h1>
+<p class="subtitle">2025-07-15 &middot; Python/JavaScript/TypeScript &middot; ~5000 LOC &middot; Serverless Application</p>
+
+<div class="executive">
+<h2 style="border:none;margin-top:0;padding:0">Executive Summary</h2>
+<h3>Repository Status</h3>
+<p class="tier-badge tier-remediation">&#x1F7E0; Remediation Required</p>
+<p>This repo has 2 High findings, 20 Medium findings, 8 Low findings. Rule matched: 2-11 High &rarr; Remediation Required. MOD classification maps 1 High to Pilot-Ready (a single modernization gap is not a deployment blocker). With 2 High findings, this service requires remediation before modernization-readiness.</p>
+
+<h3>Key Findings</h3>
+<ul>
+<li>Operations &amp; Observability is critically immature (1.33/4.0) &mdash; no alerting, no SLOs, no deployment strategy</li>
+<li>Security baseline needs work (2.33/4.0) &mdash; deprecated runtimes, no security scanning in pipeline</li>
+<li>Infrastructure is partially modern (2.73/4.0) &mdash; serverless compute but gaps in backup, network security, and CI/CD</li>
+<li>Data platform is strongest category (3.25/4.0) &mdash; S3 + Textract + DynamoDB with centralized access layer</li>
+</ul>
+
+<h3>Remediation Plan</h3>
+<p>Phase 1 (immediate): Fix deployment strategy (canary deploys), add integration tests, enable backups, add security scanning, tighten security groups.</p>
+<p>Phase 2 (near-term): Upgrade runtimes (CDK v2, Python 3.12+), migrate to OpenSearch, add monitoring/alerting, implement API versioning.</p>
+
+<h3>Recommended Actions</h3>
+<ol>
+<li>Implement Lambda canary deployments with automatic rollback (OPS-Q5: High)</li>
+<li>Create integration test suite for document processing pipeline (OPS-Q6: High)</li>
+<li>Enable DynamoDB PITR, S3 versioning, and automated ES snapshots (INF-Q8)</li>
+</ol>
+</div>
+
+<div class="cards">
+<div class="card card-total"><div class="card-value">30</div><div class="card-label">Total Findings</div></div>
+<div class="card card-high"><div class="card-value">2</div><div class="card-label">High Severity</div></div>
+<div class="card card-medium"><div class="card-value">20</div><div class="card-label">Medium Severity</div></div>
+<div class="card card-low"><div class="card-value">8</div><div class="card-label">Low Severity</div></div>
+</div>
+
+<h2>Technology Stack</h2>
+<table class="tech-table">
+<tr><th>Attribute</th><th>Value</th></tr>
+<tr><td>Language</td><td>Python 3.8, Java 8, JavaScript/TypeScript (Node.js 18+)</td></tr>
+<tr><td>Framework</td><td>AWS CDK v1.132.0, Next.js 14.1, React 18, Redux 5</td></tr>
+<tr><td>IaC</td><td>CDK v1 (TypeScript) + CloudFormation</td></tr>
+<tr><td>Compute</td><td>AWS Lambda (serverless)</td></tr>
+<tr><td>Database</td><td>DynamoDB + Amazon Elasticsearch 7.4</td></tr>
+<tr><td>Priority</td><td>&mdash;</td></tr>
+</table>
+
+<h2>Category-by-Category Breakdown</h2>
+<table>
+<tr><th>Category</th><th>Score</th><th>Rating</th><th>Status</th></tr>
+<tr><td>Infrastructure &amp; DevOps</td><td>2.73 / 4.0</td><td>Partial</td><td><span class="badge badge-needs-work">Needs Work</span></td></tr>
+<tr><td>Application Architecture</td><td>2.67 / 4.0</td><td>Partial</td><td><span class="badge badge-needs-work">Needs Work</span></td></tr>
+<tr><td>Data Platform</td><td>3.25 / 4.0</td><td>Partial</td><td><span class="badge badge-needs-work">Needs Work</span></td></tr>
+<tr><td>Security Baseline</td><td>2.33 / 4.0</td><td>Needs Work</td><td><span class="badge badge-needs-work">Needs Work</span></td></tr>
+<tr><td>Operations &amp; Observability</td><td>1.33 / 4.0</td><td>Not Ready</td><td><span class="badge badge-critical">Critical</span></td></tr>
+</table>
+
+<h2>Detailed Findings</h2>
+
+<div class="finding-card high">
+<div class="finding-title"><span class="badge badge-high">HIGH</span> OPS-Q5: Deployment Strategy</div>
+<div class="finding-category">Category: Operations &amp; Observability</div>
+<div class="finding-section"><div class="finding-section-title">Finding</div><p>CDK deploy directly updates production CloudFormation stack. No canary, blue/green, or traffic shifting. All changes go directly to production with no staged validation or automatic rollback.</p></div>
+<div class="finding-section"><div class="finding-section-title">Recommendation</div><p>Implement Lambda deployment preferences with CodeDeploy canary (Canary10Percent5Minutes). Add automatic rollback on CloudWatch alarm breach. Add pre/post deployment hooks for validation.</p></div>
+</div>
+
+<div class="finding-card high">
+<div class="finding-title"><span class="badge badge-high">HIGH</span> OPS-Q6: Integration Testing</div>
+<div class="finding-category">Category: Operations &amp; Observability</div>
+<div class="finding-section"><div class="finding-section-title">Finding</div><p>Only 2 Python unit test files (test_datastore.py, test_helper.py). No integration tests for the document processing workflow. No API tests. No end-to-end tests in CI pipeline.</p></div>
+<div class="finding-section"><div class="finding-section-title">Recommendation</div><p>Create integration test suite covering upload&rarr;process&rarr;retrieve workflow. Add API contract tests for all endpoints. Run in CI pipeline against a staging environment.</p></div>
+</div>
+
+<div class="finding-card medium">
+<div class="finding-title"><span class="badge badge-medium">MEDIUM</span> INF-Q5: Network Security</div>
+<div class="finding-category">Category: Infrastructure &amp; DevOps</div>
+<div class="finding-section"><div class="finding-section-title">Finding</div><p>VPC with private subnets configured. Security group allows ALL traffic from ANY IPv4 (Peer.anyIpv4(), Port.allTraffic()) &mdash; overly permissive.</p></div>
+<div class="finding-section"><div class="finding-section-title">Recommendation</div><p>Replace Peer.anyIpv4() with VPC CIDR or self-referencing security group rule for Elasticsearch access.</p></div>
+</div>
+
+<div class="finding-card medium">
+<div class="finding-title"><span class="badge badge-medium">MEDIUM</span> INF-Q8: Backup and Recovery</div>
+<div class="finding-category">Category: Infrastructure &amp; DevOps</div>
+<div class="finding-section"><div class="finding-section-title">Finding</div><p>No backup configuration for any data store. DynamoDB lacks PITR. S3 versioning disabled. No Elasticsearch snapshots. No AWS Backup plans.</p></div>
+<div class="finding-section"><div class="finding-section-title">Recommendation</div><p>Enable DynamoDB PITR, S3 versioning on documents bucket, automated ES snapshots, and an AWS Backup plan.</p></div>
+</div>
+
+<div class="finding-card medium">
+<div class="finding-title"><span class="badge badge-medium">MEDIUM</span> INF-Q11: CI/CD Automation</div>
+<div class="finding-category">Category: Infrastructure &amp; DevOps</div>
+<div class="finding-section"><div class="finding-section-title">Finding</div><p>Single-stage CodePipeline with Source&rarr;Deploy. Build, test, and deploy combined in one CodeBuild step. No quality gates or multi-environment promotion.</p></div>
+<div class="finding-section"><div class="finding-section-title">Recommendation</div><p>Restructure: Source &rarr; Build/Test (gate) &rarr; Staging &rarr; Integration Test &rarr; Production. Add cdk-nag for IaC validation.</p></div>
+</div>
+
+<div class="finding-card medium">
+<div class="finding-title"><span class="badge badge-medium">MEDIUM</span> SEC-Q5: Secrets Management</div>
+<div class="finding-category">Category: Security Baseline</div>
+<div class="finding-section"><div class="finding-section-title">Finding</div><p>No Secrets Manager or Vault. Config via CDK environment variables. IAM-based auth minimizes secret surface but no formal secrets management or rotation.</p></div>
+<div class="finding-section"><div class="finding-section-title">Recommendation</div><p>Adopt AWS Secrets Manager for any credentials. Use SSM Parameter Store (SecureString) for sensitive configuration. Add rotation policies.</p></div>
+</div>
+
+<div class="finding-card medium">
+<div class="finding-title"><span class="badge badge-medium">MEDIUM</span> SEC-Q7: Application Security Pipeline</div>
+<div class="finding-category">Category: Security Baseline</div>
+<div class="finding-section"><div class="finding-section-title">Finding</div><p>No SAST, dependency scanning, or security gates in pipeline. No Dependabot, npm audit, pip-audit, or container scanning configured.</p></div>
+<div class="finding-section"><div class="finding-section-title">Recommendation</div><p>Add cdk-nag, npm audit, pip-audit, Dependabot, and Semgrep to the CI pipeline. Gate deployments on critical findings.</p></div>
+</div>
+
+<div class="finding-card medium">
+<div class="finding-title"><span class="badge badge-medium">MEDIUM</span> APP-Q1: Programming Languages</div>
+<div class="finding-category">Category: Application Architecture</div>
+<div class="finding-section"><div class="finding-section-title">Finding</div><p>Compound legacy: Python 3.8 (EOL), Java 8 (EOL), CDK v1 (EOL), boto3 1.13.20 (severely outdated), aws-sdk v2. Frontend is modern (Next.js 14.1).</p></div>
+<div class="finding-section"><div class="finding-section-title">Recommendation</div><p>Priority: CDK v1&rarr;v2, Python 3.8&rarr;3.12+, update boto3, aws-sdk v2&rarr;v3, Java 8&rarr;21.</p></div>
+</div>
+
+<div class="finding-card medium">
+<div class="finding-title"><span class="badge badge-medium">MEDIUM</span> OPS-Q4: Anomaly Detection and Alerting</div>
+<div class="finding-category">Category: Operations &amp; Observability</div>
+<div class="finding-section"><div class="finding-section-title">Finding</div><p>No CloudWatch alarms configured. No anomaly detection. DLQ messages accumulate silently. Failures are completely silent.</p></div>
+<div class="finding-section"><div class="finding-section-title">Recommendation</div><p>Add CloudWatch alarms for Lambda errors, DLQ depth, API 5xx, ES cluster health. Enable anomaly detection on API latency.</p></div>
+</div>
+
+<div class="finding-card low">
+<div class="finding-title"><span class="badge badge-low">LOW</span> INF-Q2: Managed Databases</div>
+<div class="finding-category">Category: Infrastructure &amp; DevOps</div>
+<div class="finding-section"><div class="finding-section-title">Finding</div><p>DynamoDB and Elasticsearch Service are managed. Non-CICD path deploys single-AZ Elasticsearch. Legacy ES naming.</p></div>
+<div class="finding-section"><div class="finding-section-title">Recommendation</div><p>Migrate to Amazon OpenSearch Service. Ensure multi-AZ in all deployment paths.</p></div>
+</div>
+
+<div class="finding-card low">
+<div class="finding-title"><span class="badge badge-low">LOW</span> APP-Q2: Monolith vs Microservices</div>
+<div class="finding-category">Category: Application Architecture</div>
+<div class="finding-section"><div class="finding-section-title">Finding</div><p>Modular serverless with 12+ Lambda functions and SQS/SNS communication. Deployed as single CDK stack with shared DynamoDB tables.</p></div>
+<div class="finding-section"><div class="finding-section-title">Recommendation</div><p>Consider splitting into independent stacks for API, processing pipeline, and shared resources.</p></div>
+</div>
+
+<h2>Modernization Recommendation</h2>
+<div class="executive">
+<p><strong>&#x1F7E0; Move to Modern DevOps (Triggered)</strong></p>
+<p>The primary modernization pathway for this service is adopting modern DevOps practices. The current single-stage pipeline with direct-to-production deployment and minimal testing creates significant risk. Implementing multi-stage pipelines, canary deployments, integration testing, and operational monitoring will significantly improve the service&rsquo;s modernization readiness.</p>
+<ol>
+<li><strong>Implement canary deployments</strong> &mdash; Lambda deployment preferences with CodeDeploy and automatic rollback</li>
+<li><strong>Add integration test suite</strong> &mdash; Cover the document processing pipeline end-to-end</li>
+<li><strong>Enable backup and recovery</strong> &mdash; DynamoDB PITR, S3 versioning, Elasticsearch snapshots</li>
+</ol>
+</div>
+
+<div class="footer">Generated by AWS Transform &middot; Modernization Readiness Analysis Report</div>
+</div>
+</body>
+</html>

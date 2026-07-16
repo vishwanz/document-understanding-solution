@@ -1,0 +1,767 @@
+{
+  "analysis_type": "mod",
+  "metadata": {
+    "repository": "document-understanding-solution",
+    "analysis_date": "2025-07-15",
+    "td_version": "modernization-readiness-analysis",
+    "repo_type": "application",
+    "service_archetype": "event-processor",
+    "archetype_source": "auto-detected",
+    "archetype_justification": "Primary workload pattern is event-driven document processing — Lambda functions triggered by DynamoDB Streams, SQS queues, and S3 notifications. The API surface (API Gateway) exists but is secondary to the core event-processing pipeline.",
+    "priority": null,
+    "tags": [],
+    "context": null,
+    "surface_flags": {
+      "has_persistent_data_store": true,
+      "has_at_rest_data_surface": true,
+      "has_deployed_workload": true,
+      "has_api_surface": true,
+      "has_multi_instance_deployment": true,
+      "has_iac_provisioning_aws_resources": true
+    }
+  },
+  "overall_score": 2.46,
+  "categories": [
+    {
+      "category_id": "INF",
+      "category": "Infrastructure & DevOps",
+      "numeric_score": 2.73,
+      "score_rating": "Partial",
+      "severity_status": "Needs Work"
+    },
+    {
+      "category_id": "APP",
+      "category": "Application Architecture",
+      "numeric_score": 2.67,
+      "score_rating": "Partial",
+      "severity_status": "Needs Work"
+    },
+    {
+      "category_id": "DATA",
+      "category": "Data Platform",
+      "numeric_score": 3.25,
+      "score_rating": "Partial",
+      "severity_status": "Needs Work"
+    },
+    {
+      "category_id": "SEC",
+      "category": "Security Baseline",
+      "numeric_score": 2.33,
+      "score_rating": "Needs Work",
+      "severity_status": "Needs Work"
+    },
+    {
+      "category_id": "OPS",
+      "category": "Operations & Observability",
+      "numeric_score": 1.33,
+      "score_rating": "Not Ready",
+      "severity_status": "Critical"
+    }
+  ],
+  "classification": {
+    "tier": "Remediation Required",
+    "high_count": 2,
+    "medium_count": 20,
+    "low_count": 8,
+    "rule_matched": "2-11 High → Remediation Required",
+    "classification_consistency_check": "consistent"
+  },
+  "top_gaps": [
+    {
+      "question_id": "OPS-Q5",
+      "title": "Deployment Strategy",
+      "score": 1,
+      "gap": "Direct-to-production CDK deploy with no staged rollout",
+      "impact": "High risk of production incidents with no ability to canary or rollback"
+    },
+    {
+      "question_id": "OPS-Q6",
+      "title": "Integration Testing",
+      "score": 1,
+      "gap": "Only 2 basic unit test files; no integration or end-to-end tests in CI",
+      "impact": "Regressions reach production undetected"
+    },
+    {
+      "question_id": "INF-Q8",
+      "title": "Backup and Recovery",
+      "score": 1,
+      "gap": "No backup configuration for DynamoDB (no PITR) or Elasticsearch; S3 versioning disabled",
+      "impact": "Data loss risk with no recovery path"
+    },
+    {
+      "question_id": "INF-Q11",
+      "title": "CI/CD Automation",
+      "score": 2,
+      "gap": "Single-stage CodePipeline with minimal test coverage",
+      "impact": "Limited quality gates before production"
+    },
+    {
+      "question_id": "SEC-Q5",
+      "title": "Secrets Management",
+      "score": 2,
+      "gap": "No Secrets Manager or Vault; config via environment variables with no rotation",
+      "impact": "No credential rotation or audit trail"
+    }
+  ],
+  "findings": [
+    {
+      "question_id": "INF-Q2",
+      "category": "Infrastructure & DevOps",
+      "category_id": "INF",
+      "title": "Managed Databases — single-AZ Elasticsearch in non-CICD path",
+      "description": "DynamoDB and Amazon Elasticsearch Service are both managed, but the non-CICD deployment path deploys Elasticsearch as a single-instance cluster without zone awareness.",
+      "gap": "Elasticsearch deployed single-AZ in non-CICD mode. Legacy Amazon Elasticsearch Service naming.",
+      "recommendation": "Migrate to Amazon OpenSearch Service. Ensure all deployment paths use zone-awareness with ≥2 AZs.",
+      "severity": "Low",
+      "priority": "P1",
+      "effort": "Medium",
+      "phase": 2,
+      "evidence": {"file": "source/lib/cdk-textract-stack.ts", "lines": null},
+      "mod_metadata": {
+        "internal_score": 3,
+        "score_label": "Partial",
+        "archetype_calibrated": false,
+        "core_question": true
+      }
+    },
+    {
+      "question_id": "INF-Q3",
+      "category": "Infrastructure & DevOps",
+      "category_id": "INF",
+      "title": "Workflow Orchestration — ad hoc pipeline in handler code",
+      "description": "Document processing pipeline implemented as Lambda-to-SQS routing without dedicated orchestration. The documentProcessor Lambda manually routes by file type. Error handling relies on timeout-based DLQ detection.",
+      "gap": "No Step Functions or equivalent orchestrating the multi-step document processing workflow.",
+      "recommendation": "Adopt AWS Step Functions for the document processing pipeline to gain visual monitoring, built-in retry/error handling, and parallel processing control.",
+      "severity": "Medium",
+      "priority": "P2",
+      "effort": "Medium",
+      "phase": 2,
+      "evidence": {"file": "source/lambda/documentprocessor/lambda_function.py", "lines": null},
+      "mod_metadata": {
+        "internal_score": 2,
+        "score_label": "Needs Work",
+        "archetype_calibrated": true,
+        "core_question": false
+      }
+    },
+    {
+      "question_id": "INF-Q5",
+      "category": "Infrastructure & DevOps",
+      "category_id": "INF",
+      "title": "Network Security — overly permissive security group",
+      "description": "VPC with private subnets configured. Security group allows ALL traffic from ANY IPv4 (Peer.anyIpv4(), Port.allTraffic()).",
+      "gap": "Security group allows 0.0.0.0/0 on all ports within the VPC.",
+      "recommendation": "Replace Peer.anyIpv4() with VPC CIDR or self-referencing security group rule.",
+      "severity": "Medium",
+      "priority": "P1",
+      "effort": "Low",
+      "phase": 1,
+      "evidence": {"file": "source/lib/cdk-textract-stack.ts", "lines": null},
+      "mod_metadata": {
+        "internal_score": 2,
+        "score_label": "Needs Work",
+        "archetype_calibrated": false,
+        "core_question": true
+      }
+    },
+    {
+      "question_id": "INF-Q6",
+      "category": "Infrastructure & DevOps",
+      "category_id": "INF",
+      "title": "API Entry Point — no throttling configured",
+      "description": "API Gateway with Cognito auth and request validation, but no usage plan or throttling. WAF not integrated.",
+      "gap": "No throttling or rate limiting on API Gateway.",
+      "recommendation": "Add API Gateway usage plan with rate limiting and burst throttling. Consider WAF.",
+      "severity": "Low",
+      "priority": "P2",
+      "effort": "Low",
+      "phase": 2,
+      "evidence": {"file": "source/lib/cdk-textract-stack.ts", "lines": null},
+      "mod_metadata": {
+        "internal_score": 3,
+        "score_label": "Partial",
+        "archetype_calibrated": false,
+        "core_question": false
+      }
+    },
+    {
+      "question_id": "INF-Q7",
+      "category": "Infrastructure & DevOps",
+      "category_id": "INF",
+      "title": "Auto-Scaling — Elasticsearch has no auto-scaling",
+      "description": "Lambda scales automatically. DynamoDB uses PAY_PER_REQUEST. Elasticsearch has fixed instance type with no auto-scaling.",
+      "gap": "Elasticsearch has no auto-scaling. Lambda reserved concurrency cap (30) may be insufficient.",
+      "recommendation": "Enable auto-scaling for OpenSearch. Review Lambda concurrency limits.",
+      "severity": "Low",
+      "priority": "P2",
+      "effort": "Low",
+      "phase": 2,
+      "evidence": {"file": "source/lib/cdk-textract-stack.ts", "lines": null},
+      "mod_metadata": {
+        "internal_score": 3,
+        "score_label": "Partial",
+        "archetype_calibrated": false,
+        "core_question": false
+      }
+    },
+    {
+      "question_id": "INF-Q8",
+      "category": "Infrastructure & DevOps",
+      "category_id": "INF",
+      "title": "Backup and Recovery — no backup configuration",
+      "description": "No backup configuration for any data store. DynamoDB lacks PITR. S3 versioning disabled. No Elasticsearch snapshots. No AWS Backup plans.",
+      "gap": "Complete absence of backup and recovery configuration.",
+      "recommendation": "Enable DynamoDB PITR, S3 versioning on documents bucket, automated ES snapshots, and AWS Backup plan.",
+      "severity": "Medium",
+      "priority": "P2",
+      "effort": "Low",
+      "phase": 1,
+      "evidence": {"file": "source/lib/cdk-textract-stack.ts", "lines": null},
+      "mod_metadata": {
+        "internal_score": 1,
+        "score_label": "Not Ready",
+        "archetype_calibrated": false,
+        "core_question": false
+      }
+    },
+    {
+      "question_id": "INF-Q9",
+      "category": "Infrastructure & DevOps",
+      "category_id": "INF",
+      "title": "High Availability — single-AZ Elasticsearch in non-CICD path",
+      "description": "Lambda and DynamoDB are inherently multi-AZ. CICD path has multi-AZ ES. Non-CICD path has single-instance ES.",
+      "gap": "Non-CICD deployment has single-AZ Elasticsearch.",
+      "recommendation": "Ensure all deployment paths use multi-AZ Elasticsearch/OpenSearch.",
+      "severity": "Low",
+      "priority": "P2",
+      "effort": "Low",
+      "phase": 2,
+      "evidence": {"file": "source/lib/cdk-textract-stack.ts", "lines": null},
+      "mod_metadata": {
+        "internal_score": 3,
+        "score_label": "Partial",
+        "archetype_calibrated": false,
+        "core_question": false
+      }
+    },
+    {
+      "question_id": "INF-Q10",
+      "category": "Infrastructure & DevOps",
+      "category_id": "INF",
+      "title": "IaC Coverage — no operational resources in IaC",
+      "description": "Core infrastructure comprehensively defined in CDK. CICD pipeline in CloudFormation. But no CloudWatch alarms, dashboards, or backup plans in IaC.",
+      "gap": "No operational/DR resources (alarms, dashboards, backup plans) in IaC.",
+      "recommendation": "Add CloudWatch alarms, dashboards, and AWS Backup plans as CDK constructs.",
+      "severity": "Low",
+      "priority": "P1",
+      "effort": "Medium",
+      "phase": 2,
+      "evidence": {"file": "source/lib/cdk-textract-stack.ts", "lines": null},
+      "mod_metadata": {
+        "internal_score": 3,
+        "score_label": "Partial",
+        "archetype_calibrated": false,
+        "core_question": true
+      }
+    },
+    {
+      "question_id": "INF-Q11",
+      "category": "Infrastructure & DevOps",
+      "category_id": "INF",
+      "title": "CI/CD Automation — single-stage pipeline",
+      "description": "CloudFormation-based CodePipeline with Source→Deploy. Build, test, and deploy combined in one CodeBuild step. No quality gates.",
+      "gap": "No separate test stage. No IaC validation. No multi-environment promotion.",
+      "recommendation": "Restructure: Source → Build/Test → Staging → Integration Test → Production. Add cdk-nag validation.",
+      "severity": "Medium",
+      "priority": "P1",
+      "effort": "Medium",
+      "phase": 1,
+      "evidence": {"file": "deployment/document-understanding-solution.template", "lines": null},
+      "mod_metadata": {
+        "internal_score": 2,
+        "score_label": "Needs Work",
+        "archetype_calibrated": false,
+        "core_question": true
+      }
+    },
+    {
+      "question_id": "APP-Q1",
+      "category": "Application Architecture",
+      "category_id": "APP",
+      "title": "Programming Languages — compound legacy signals",
+      "description": "Backend uses Python 3.8 (EOL), Java 8 (EOL), CDK v1 (EOL), boto3 1.13.20 (severely outdated), aws-sdk v2. Frontend is modern (Next.js 14.1, React 18).",
+      "gap": "Compound version debt: Python 3.8 + Java 8 + CDK v1 + boto3 1.13.20 + aws-sdk v2.",
+      "recommendation": "Migrate CDK v1→v2, Python 3.8→3.12+, update boto3, aws-sdk v2→v3, Java 8→21.",
+      "severity": "Medium",
+      "priority": "P2",
+      "effort": "High",
+      "phase": 1,
+      "evidence": {"file": "source/package.json", "lines": null},
+      "mod_metadata": {
+        "internal_score": 2,
+        "score_label": "Needs Work",
+        "archetype_calibrated": false,
+        "core_question": false
+      }
+    },
+    {
+      "question_id": "APP-Q2",
+      "category": "Application Architecture",
+      "category_id": "APP",
+      "title": "Monolith vs Microservices — modular but single-stack",
+      "description": "12+ Lambda functions with distinct responsibilities communicating via SQS/SNS/DynamoDB Streams. Modular serverless architecture but deployed as a single CDK stack with shared DynamoDB tables.",
+      "gap": "Single CDK stack deployment. Shared DynamoDB tables. No independent deployment of functions.",
+      "recommendation": "Consider splitting into independent stacks: API stack, processing pipeline stack, shared resources stack.",
+      "severity": "Low",
+      "priority": "P1",
+      "effort": "Medium",
+      "phase": 3,
+      "evidence": {"file": "source/lib/cdk-textract-stack.ts", "lines": null},
+      "mod_metadata": {
+        "internal_score": 3,
+        "score_label": "Partial",
+        "archetype_calibrated": false,
+        "core_question": true
+      }
+    },
+    {
+      "question_id": "APP-Q5",
+      "category": "Application Architecture",
+      "category_id": "APP",
+      "title": "API Versioning Strategy — no versioning",
+      "description": "API endpoints are unversioned: /search, /documents, /document, /redact. No /v1/ prefix, no version headers.",
+      "gap": "No API versioning strategy. Breaking changes affect all consumers simultaneously.",
+      "recommendation": "Implement URL-path versioning (e.g., /v1/documents). Define backward-compatibility policy.",
+      "severity": "Medium",
+      "priority": "P2",
+      "effort": "Low",
+      "phase": 2,
+      "evidence": {"file": "source/lib/cdk-textract-stack.ts", "lines": null},
+      "mod_metadata": {
+        "internal_score": 1,
+        "score_label": "Not Ready",
+        "archetype_calibrated": false,
+        "core_question": false
+      }
+    },
+    {
+      "question_id": "APP-Q6",
+      "category": "Application Architecture",
+      "category_id": "APP",
+      "title": "Service Discovery — static environment variables",
+      "description": "All service references passed as environment variables at deploy time. No dynamic discovery.",
+      "gap": "Static configuration — no runtime service discovery.",
+      "recommendation": "For serverless, environment variables are acceptable. Consider SSM Parameter Store for shared configuration.",
+      "severity": "Medium",
+      "priority": "P2",
+      "effort": "Low",
+      "phase": 3,
+      "evidence": {"file": "source/lib/cdk-textract-stack.ts", "lines": null},
+      "mod_metadata": {
+        "internal_score": 2,
+        "score_label": "Needs Work",
+        "archetype_calibrated": false,
+        "core_question": false
+      }
+    },
+    {
+      "question_id": "DATA-Q2",
+      "category": "Data Platform",
+      "category_id": "DATA",
+      "title": "Unified Data Access Layer — ES access scattered",
+      "description": "Centralized DocumentStore class for DynamoDB. Elasticsearch access scattered across multiple Lambda functions without abstraction.",
+      "gap": "No centralized Elasticsearch access layer.",
+      "recommendation": "Create centralized OpenSearch access layer in the helper Lambda layer.",
+      "severity": "Low",
+      "priority": "P2",
+      "effort": "Low",
+      "phase": 3,
+      "evidence": {"file": "source/lambda/helper/python/datastore.py", "lines": null},
+      "mod_metadata": {
+        "internal_score": 3,
+        "score_label": "Partial",
+        "archetype_calibrated": false,
+        "core_question": false
+      }
+    },
+    {
+      "question_id": "DATA-Q3",
+      "category": "Data Platform",
+      "category_id": "DATA",
+      "title": "Database Engine Version and EOL — Elasticsearch 7.4 legacy",
+      "description": "Elasticsearch 7.4 pinned in CDK. Amazon Elasticsearch Service is legacy naming (now OpenSearch Service). Engine version is outdated.",
+      "gap": "Elasticsearch 7.4 on deprecated service. Migration to OpenSearch needed.",
+      "recommendation": "Migrate to Amazon OpenSearch Service 2.x. Update CDK construct.",
+      "severity": "Medium",
+      "priority": "P1",
+      "effort": "Medium",
+      "phase": 2,
+      "evidence": {"file": "source/lib/cdk-textract-stack.ts", "lines": null},
+      "mod_metadata": {
+        "internal_score": 2,
+        "score_label": "Needs Work",
+        "archetype_calibrated": false,
+        "core_question": true
+      }
+    },
+    {
+      "question_id": "SEC-Q2",
+      "category": "Security Baseline",
+      "category_id": "SEC",
+      "title": "Encryption at Rest — mixed encryption types",
+      "description": "All data stores encrypted. S3 uses SSE-S3, DynamoDB uses AWS-owned key, SQS and ES use customer-managed KMS with key rotation.",
+      "gap": "S3 and DynamoDB use AWS-managed/owned encryption instead of customer-managed KMS.",
+      "recommendation": "Migrate sensitive S3 buckets to SSE-KMS. Enable customer-managed CMK for DynamoDB.",
+      "severity": "Low",
+      "priority": "P1",
+      "effort": "Low",
+      "phase": 2,
+      "evidence": {"file": "source/lib/cdk-textract-stack.ts", "lines": null},
+      "mod_metadata": {
+        "internal_score": 3,
+        "score_label": "Partial",
+        "archetype_calibrated": false,
+        "core_question": true
+      }
+    },
+    {
+      "question_id": "SEC-Q4",
+      "category": "Security Baseline",
+      "category_id": "SEC",
+      "title": "Centralized Identity — app-specific Cognito pool",
+      "description": "Application-specific Cognito User Pool with admin-create-only users. No federation with organizational IdP. No SSO.",
+      "gap": "No integration with centralized organizational identity provider.",
+      "recommendation": "Configure Cognito federation with organizational IdP (SAML/OIDC). Enable SSO.",
+      "severity": "Medium",
+      "priority": "P2",
+      "effort": "Medium",
+      "phase": 2,
+      "evidence": {"file": "source/lib/cdk-textract-stack.ts", "lines": null},
+      "mod_metadata": {
+        "internal_score": 2,
+        "score_label": "Needs Work",
+        "archetype_calibrated": false,
+        "core_question": false
+      }
+    },
+    {
+      "question_id": "SEC-Q5",
+      "category": "Security Baseline",
+      "category_id": "SEC",
+      "title": "Secrets Management — env vars without rotation",
+      "description": "No plaintext credentials. Config via CDK environment variables. IAM-based auth for DynamoDB/ES. No Secrets Manager or Vault.",
+      "gap": "No secrets management service. No rotation capability.",
+      "recommendation": "Adopt Secrets Manager for future credentials. Use SSM Parameter Store (SecureString) for sensitive config.",
+      "severity": "Medium",
+      "priority": "P1",
+      "effort": "Low",
+      "phase": 1,
+      "evidence": {"file": "source/.env", "lines": null},
+      "mod_metadata": {
+        "internal_score": 2,
+        "score_label": "Needs Work",
+        "archetype_calibrated": false,
+        "core_question": true
+      }
+    },
+    {
+      "question_id": "SEC-Q6",
+      "category": "Security Baseline",
+      "category_id": "SEC",
+      "title": "Compute Hardening — deprecated runtimes",
+      "description": "Lambda runtime patching is managed by AWS. However Python 3.8 and Java 8 runtimes are past EOL. No vulnerability scanning.",
+      "gap": "Deprecated runtimes no longer receiving patches. No vulnerability scanning.",
+      "recommendation": "Upgrade runtimes to Python 3.12+ and Java 21. Enable AWS Inspector. Add dependency scanning.",
+      "severity": "Medium",
+      "priority": "P2",
+      "effort": "Medium",
+      "phase": 1,
+      "evidence": {"file": "source/lib/cdk-textract-stack.ts", "lines": null},
+      "mod_metadata": {
+        "internal_score": 2,
+        "score_label": "Needs Work",
+        "archetype_calibrated": false,
+        "core_question": false
+      }
+    },
+    {
+      "question_id": "SEC-Q7",
+      "category": "Security Baseline",
+      "category_id": "SEC",
+      "title": "Application Security Pipeline — no security scanning",
+      "description": "No SAST, no dependency scanning, no security gates in pipeline. No Dependabot, no npm audit, no pip-audit.",
+      "gap": "Complete absence of automated security validation.",
+      "recommendation": "Add cdk-nag, npm audit, pip-audit, Dependabot, and Semgrep. Gate deployments on critical findings.",
+      "severity": "Medium",
+      "priority": "P2",
+      "effort": "Low",
+      "phase": 1,
+      "evidence": {"file": "deployment/document-understanding-solution.template", "lines": null},
+      "mod_metadata": {
+        "internal_score": 1,
+        "score_label": "Not Ready",
+        "archetype_calibrated": false,
+        "core_question": false
+      }
+    },
+    {
+      "question_id": "OPS-Q2",
+      "category": "Operations & Observability",
+      "category_id": "OPS",
+      "title": "SLO Definitions — no SLOs defined",
+      "description": "No SLO definitions. No CloudWatch alarms. No error budget tracking.",
+      "gap": "No formal service level objectives.",
+      "recommendation": "Define SLOs for API response time, document processing time, and availability.",
+      "severity": "Medium",
+      "priority": "P2",
+      "effort": "Medium",
+      "phase": 2,
+      "evidence": {"file": "source/lib/cdk-textract-stack.ts", "lines": null},
+      "mod_metadata": {
+        "internal_score": 1,
+        "score_label": "Not Ready",
+        "archetype_calibrated": false,
+        "core_question": false
+      }
+    },
+    {
+      "question_id": "OPS-Q3",
+      "category": "Operations & Observability",
+      "category_id": "OPS",
+      "title": "Business Metrics — no custom metrics",
+      "description": "No custom business metrics published. Only print() logging. No CloudWatch put_metric_data.",
+      "gap": "No visibility into business outcomes.",
+      "recommendation": "Publish custom metrics: documents_processed, processing_duration, processing_errors, search_queries.",
+      "severity": "Medium",
+      "priority": "P2",
+      "effort": "Low",
+      "phase": 2,
+      "evidence": null,
+      "mod_metadata": {
+        "internal_score": 1,
+        "score_label": "Not Ready",
+        "archetype_calibrated": false,
+        "core_question": false
+      }
+    },
+    {
+      "question_id": "OPS-Q4",
+      "category": "Operations & Observability",
+      "category_id": "OPS",
+      "title": "Anomaly Detection and Alerting — no alerting",
+      "description": "No CloudWatch alarms. No anomaly detection. DLQ messages accumulate silently.",
+      "gap": "Failures are completely silent. No alerting on any metric.",
+      "recommendation": "Add CloudWatch alarms for Lambda errors, DLQ depth, API 5xx, ES cluster health. Enable anomaly detection.",
+      "severity": "Medium",
+      "priority": "P2",
+      "effort": "Low",
+      "phase": 1,
+      "evidence": {"file": "source/lib/cdk-textract-stack.ts", "lines": null},
+      "mod_metadata": {
+        "internal_score": 1,
+        "score_label": "Not Ready",
+        "archetype_calibrated": false,
+        "core_question": false
+      }
+    },
+    {
+      "question_id": "OPS-Q5",
+      "category": "Operations & Observability",
+      "category_id": "OPS",
+      "title": "Deployment Strategy — direct to production",
+      "description": "CDK deploy directly updates production CloudFormation stack. No canary, blue/green, or traffic shifting.",
+      "gap": "All changes go directly to production with no staged validation or automatic rollback.",
+      "recommendation": "Implement Lambda deployment preferences with CodeDeploy canary. Add automatic rollback on alarm breach.",
+      "severity": "High",
+      "priority": "P1",
+      "effort": "Medium",
+      "phase": 1,
+      "evidence": {"file": "deployment/document-understanding-solution.template", "lines": null},
+      "mod_metadata": {
+        "internal_score": 1,
+        "score_label": "Not Ready",
+        "archetype_calibrated": false,
+        "core_question": true
+      }
+    },
+    {
+      "question_id": "OPS-Q6",
+      "category": "Operations & Observability",
+      "category_id": "OPS",
+      "title": "Integration Testing — minimal test coverage",
+      "description": "Only 2 Python unit test files. No integration tests for the document processing workflow. No API tests.",
+      "gap": "No integration test coverage for critical document processing pipeline.",
+      "recommendation": "Create integration test suite covering upload→process→retrieve workflow. Run in CI against staging.",
+      "severity": "High",
+      "priority": "P1",
+      "effort": "High",
+      "phase": 1,
+      "evidence": {"file": "source/test/test_datastore.py", "lines": null},
+      "mod_metadata": {
+        "internal_score": 1,
+        "score_label": "Not Ready",
+        "archetype_calibrated": false,
+        "core_question": true
+      }
+    },
+    {
+      "question_id": "OPS-Q7",
+      "category": "Operations & Observability",
+      "category_id": "OPS",
+      "title": "Incident Response Automation — no runbooks",
+      "description": "No runbooks, no SSM Automation, no self-healing. DLQs capture failures but no automated remediation.",
+      "gap": "Incident response is entirely ad hoc.",
+      "recommendation": "Create DLQ redrive automation. SSM runbooks for common incidents. Self-healing on known failure modes.",
+      "severity": "Medium",
+      "priority": "P2",
+      "effort": "Medium",
+      "phase": 3,
+      "evidence": {"file": "source/lib/cdk-textract-stack.ts", "lines": null},
+      "mod_metadata": {
+        "internal_score": 1,
+        "score_label": "Not Ready",
+        "archetype_calibrated": false,
+        "core_question": false
+      }
+    },
+    {
+      "question_id": "OPS-Q8",
+      "category": "Operations & Observability",
+      "category_id": "OPS",
+      "title": "Observability Ownership — no dashboards or owners",
+      "description": "No dashboards in IaC. No CODEOWNERS. No named alarm owners. X-Ray traces exist but no dashboards.",
+      "gap": "No observability ownership model.",
+      "recommendation": "Create CloudWatch dashboard in CDK. Add CODEOWNERS. Define alarm ownership.",
+      "severity": "Medium",
+      "priority": "P2",
+      "effort": "Low",
+      "phase": 2,
+      "evidence": null,
+      "mod_metadata": {
+        "internal_score": 1,
+        "score_label": "Not Ready",
+        "archetype_calibrated": false,
+        "core_question": false
+      }
+    },
+    {
+      "question_id": "OPS-Q9",
+      "category": "Operations & Observability",
+      "category_id": "OPS",
+      "title": "Resource Tagging Governance — no tags",
+      "description": "No tags on any resources. No tagging strategy. No cost allocation tags.",
+      "gap": "All resources are untagged. No cost tracking or ownership identification.",
+      "recommendation": "Add mandatory tags (Environment, Service, Owner, CostCenter) via CDK Tags.of(). Enable cost allocation tags.",
+      "severity": "Medium",
+      "priority": "P2",
+      "effort": "Low",
+      "phase": 2,
+      "evidence": {"file": "source/lib/cdk-textract-stack.ts", "lines": null},
+      "mod_metadata": {
+        "internal_score": 1,
+        "score_label": "Not Ready",
+        "archetype_calibrated": false,
+        "core_question": false
+      }
+    }
+  ],
+  "evaluations": [
+    {"question_id": "INF-Q1", "category_id": "INF", "title": "Managed Compute", "status": "pass", "score": 4, "reason": "All compute on Lambda (serverless). No EC2 for application workloads."},
+    {"question_id": "INF-Q4", "category_id": "INF", "title": "Async Messaging and Streaming", "status": "pass", "score": 4, "reason": "All messaging on managed services (SNS, SQS, DynamoDB Streams, S3 notifications) with structured consumer patterns."},
+    {"question_id": "APP-Q3", "category_id": "APP", "title": "Async vs Sync Communication", "status": "pass", "score": 4, "reason": "Event-processor archetype: primary input is async (DynamoDB Streams, SQS). Outbound calls appropriately use sync/async Textract APIs."},
+    {"question_id": "APP-Q4", "category_id": "APP", "title": "Long-Running Process Handling", "status": "pass", "score": 4, "reason": "Event-processor archetype: handlers are async by design. PDFs routed to async Textract with SNS completion callbacks."},
+    {"question_id": "DATA-Q1", "category_id": "DATA", "title": "Unstructured Data Storage", "status": "pass", "score": 4, "reason": "Documents in S3 with Textract, Comprehend, and Kendra parsing pipeline."},
+    {"question_id": "DATA-Q4", "category_id": "DATA", "title": "Stored Procedures and Schema Complexity", "status": "pass", "score": 4, "reason": "No stored procedures. All business logic in Lambda. DynamoDB is schemaless."},
+    {"question_id": "SEC-Q1", "category_id": "SEC", "title": "Audit Logging", "status": "not_evaluated_surface_flag", "score": null, "reason": "Application-level IaC only. CloudTrail is an account-level concern belonging in foundation infrastructure repo."},
+    {"question_id": "SEC-Q3", "category_id": "SEC", "title": "API Authentication", "status": "pass", "score": 4, "reason": "All API endpoints authenticated via Cognito User Pool authorizer."},
+    {"question_id": "OPS-Q1", "category_id": "OPS", "title": "Distributed Tracing", "status": "pass", "score": 4, "reason": "All Lambda functions have X-Ray active tracing. Automatic propagation through SQS/SNS/DynamoDB/API Gateway."}
+  ],
+  "pathways": [
+    {
+      "id": "move-to-cloud-native",
+      "name": "Move to Cloud Native",
+      "status": "Not Triggered",
+      "priority": null,
+      "effort": null,
+      "key_trigger_criteria": "APP-Q2 = 3 — application already has modular serverless architecture with independently deployable Lambda functions.",
+      "triggering_questions": [{"question_id": "APP-Q2", "score": 3, "note": "APP-Q2 = 3 meets threshold; pathway not needed"}],
+      "detail": null,
+      "not_triggered_reason": "APP-Q2 >= 3: application is already a modular serverless architecture."
+    },
+    {
+      "id": "move-to-containers",
+      "name": "Move to Containers",
+      "status": "Not Triggered",
+      "priority": null,
+      "effort": null,
+      "key_trigger_criteria": "INF-Q1 = 4 — compute already on Lambda (serverless). Container pathway does not apply.",
+      "triggering_questions": [{"question_id": "INF-Q1", "score": 4, "note": "INF-Q1 = 4; compute is already serverless"}],
+      "detail": null,
+      "not_triggered_reason": "Workload already runs on Lambda (serverless); container pathway does not apply."
+    },
+    {
+      "id": "move-to-open-source",
+      "name": "Move to Open Source",
+      "status": "Not Triggered",
+      "priority": null,
+      "effort": null,
+      "key_trigger_criteria": "DATA-Q4 = 4 — no stored procedures or proprietary SQL. No commercial database engines detected.",
+      "triggering_questions": [{"question_id": "DATA-Q4", "score": 4, "note": "DATA-Q4 = 4; no proprietary SQL"}],
+      "detail": null
+    },
+    {
+      "id": "move-to-managed-databases",
+      "name": "Move to Managed Databases",
+      "status": "Not Triggered",
+      "priority": null,
+      "effort": null,
+      "key_trigger_criteria": "INF-Q2 = 3 — databases already use managed services (DynamoDB, Amazon Elasticsearch Service).",
+      "triggering_questions": [{"question_id": "INF-Q2", "score": 3, "note": "INF-Q2 = 3 meets threshold; databases are managed"}],
+      "detail": null
+    },
+    {
+      "id": "move-to-managed-analytics",
+      "name": "Move to Managed Analytics",
+      "status": "Not Triggered",
+      "priority": null,
+      "effort": null,
+      "key_trigger_criteria": "INF-Q4 = 4 — messaging already on managed services. No data processing workloads requiring analytics migration.",
+      "triggering_questions": [{"question_id": "INF-Q4", "score": 4, "note": "INF-Q4 = 4; all messaging managed"}],
+      "detail": null
+    },
+    {
+      "id": "move-to-modern-devops",
+      "name": "Move to Modern DevOps",
+      "status": "Triggered",
+      "priority": "High",
+      "effort": "Medium",
+      "key_trigger_criteria": "INF-Q11 = 2 (primary trigger met); OPS-Q5 = 1, OPS-Q6 = 1 (supporting conditions strengthen)",
+      "triggering_questions": [
+        {"question_id": "INF-Q11", "score": 2},
+        {"question_id": "OPS-Q5", "score": 1},
+        {"question_id": "OPS-Q6", "score": 1}
+      ],
+      "detail": {
+        "current_state": "Single-stage CodePipeline with inline buildspec. Direct-to-production CDK deploy. Only 2 unit test files.",
+        "recommended_services": ["CodePipeline", "CodeBuild", "CodeDeploy", "CDK v2", "CloudWatch", "X-Ray"],
+        "immediate_actions": ["Restructure pipeline with separate test stage", "Add Lambda deployment preferences with canary", "Add integration test suite"],
+        "learning_materials": ["https://skillbuilder.aws/learning-plan/1FGEQKGPQD", "https://skillbuilder.aws/learn/R4B13K95YQ"]
+      }
+    },
+    {
+      "id": "move-to-ai",
+      "name": "Move to AI",
+      "status": "Not Triggered",
+      "priority": null,
+      "effort": null,
+      "key_trigger_criteria": "No AI/agent intent detected in portfolio or service context.",
+      "triggering_questions": [],
+      "detail": null,
+      "not_triggered_reason": "No AI/agent intent detected in portfolio or service context. The existing Textract/Comprehend/Kendra usage is document understanding (not generative AI/LLM/agent patterns)."
+    }
+  ],
+  "decomposition_strategy": null,
+  "filter_vocab": {
+    "categories": ["Infrastructure & DevOps", "Application Architecture", "Data Platform", "Security Baseline", "Operations & Observability"]
+  }
+}

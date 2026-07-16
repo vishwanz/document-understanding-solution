@@ -12,6 +12,8 @@ DUS leverages the power of Amazon Textract, Amazon Comprehend , Amazon Comprehen
 
 Current document formats supported : **PDF,JPG,PNG**
 
+Test test
+
 Current maximum document file size supported : **150MB**
 
 Current concurrent document uploads (via UI ) supported : **100**

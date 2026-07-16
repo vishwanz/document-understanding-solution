@@ -1,0 +1,509 @@
+{
+  "analysis_type": "ara",
+  "analysis_date": "2025-07-15",
+  "td_version": "agentic-readiness-analysis",
+  "repo_name": "document-understanding-solution",
+  "metadata": {
+    "repo_type": "application",
+    "service_archetype": "stateful-crud",
+    "archetype_source": "auto-detected",
+    "archetype_justification": "The application owns persistent state (DynamoDB documents table, Elasticsearch index, S3 document storage), exposes CRUD endpoints via API Gateway, and manages document lifecycle with status tracking.",
+    "agent_scope": "read-only",
+    "portfolio_name": "",
+    "tech_stack": {
+      "language": "TypeScript/Python/JavaScript",
+      "loc": 14741,
+      "framework": "AWS CDK v1 + Next.js 14.1 + Python 3.8 Lambda",
+      "architecture": "Serverless (API Gateway + Lambda + DynamoDB + S3 + Elasticsearch)"
+    },
+    "surface_flags": {
+      "has_persistent_data_store": true,
+      "has_http_rpc_surface": true,
+      "has_auth_surface": true,
+      "has_write_operations": true,
+      "has_logging_of_user_data": true
+    }
+  },
+  "classification": {
+    "tier": "Pilot-Ready",
+    "sub_qualifier": "Pilot-Ready (Safety Concerns)",
+    "blocker_count": 0,
+    "risk_safety_count": 9,
+    "risk_quality_count": 11,
+    "info_count": 11,
+    "high_count": 0,
+    "medium_count": 20,
+    "low_count": 11,
+    "rule_matched": "0 BLOCKER, ≥3 RISK-SAFETY → Pilot-Ready (Safety Concerns)"
+  },
+  "counts": {
+    "total": 31,
+    "high": 0,
+    "medium": 20,
+    "low": 11
+  },
+  "findings": [
+    {
+      "question_id": "AUTH-Q3",
+      "category": "Authentication & Authorization",
+      "category_id": "AUTH",
+      "title": "Action-Level Authorization",
+      "description": "All authenticated users share a single IAM role with identical API access. No action-level differentiation at the API surface.",
+      "gap": "Cannot restrict agent to read operations while allowing humans full CRUD access.",
+      "recommendation": "Configure Cognito User Pool groups and map them to separate IAM roles via Identity Pool role mapping rules. Apply method-level authorization in API Gateway.",
+      "severity": "Medium",
+      "priority": "P1",
+      "effort": "Medium",
+      "phase": 1,
+      "evidence": {"file": "source/lib/cdk-textract-stack.ts", "lines": "380-420"},
+      "ara_metadata": {
+        "native_severity": "RISK-SAFETY",
+        "safety_impact": true
+      }
+    },
+    {
+      "question_id": "AUTH-Q4",
+      "category": "Authentication & Authorization",
+      "category_id": "AUTH",
+      "title": "Identity Propagation and Delegation",
+      "description": "API Gateway extracts Cognito JWT but Lambda functions do not propagate caller identity to downstream service calls. No distinction between agent-as-self and agent-on-behalf-of-user.",
+      "gap": "No identity propagation through internal service calls. Cannot distinguish agent-initiated vs human-initiated operations.",
+      "recommendation": "Extract sub and email claims from Cognito JWT in API processor Lambda and propagate as metadata through SQS messages and DynamoDB records.",
+      "severity": "Medium",
+      "priority": "P2",
+      "effort": "Medium",
+      "phase": 2,
+      "evidence": {"file": "source/lambda/apiprocessor/lambda_function.py", "lines": "1-130"},
+      "ara_metadata": {
+        "native_severity": "RISK-SAFETY",
+        "safety_impact": true
+      }
+    },
+    {
+      "question_id": "AUTH-Q6",
+      "category": "Authentication & Authorization",
+      "category_id": "AUTH",
+      "title": "Immutable Audit Logging",
+      "description": "API Gateway JSON access logging configured but no CloudTrail, no immutable log storage. CloudWatch logs are not tamper-evident.",
+      "gap": "Logs are not immutable. No CloudTrail trail in IaC. Admin users could delete log groups.",
+      "recommendation": "Add CloudTrail trail to CDK stack with log file validation and S3 delivery with object lock.",
+      "severity": "Medium",
+      "priority": "P1",
+      "effort": "Medium",
+      "phase": 1,
+      "evidence": {"file": "source/lib/cdk-textract-stack.ts", "lines": "498-510"},
+      "ara_metadata": {
+        "native_severity": "RISK-SAFETY",
+        "safety_impact": true,
+        "conditional_resolution": "Resolved to RISK-SAFETY: agent_scope=read-only, not a deployment blocker but audit trail matters for forensics.",
+        "agent_scope": "read-only",
+        "resolution_reasoning": "AUTH-Q6 resolves to RISK-SAFETY under read-only scope because audit logging is still important but not a blocker when agents are not writing data."
+      }
+    },
+    {
+      "question_id": "STATE-Q1",
+      "category": "State Management",
+      "category_id": "STATE",
+      "title": "Compensation and Rollback",
+      "description": "Document processing pipeline has no compensation or rollback logic. Failed processing leaves partial state (DynamoDB record with IN_PROGRESS, partial S3 objects).",
+      "gap": "No saga pattern, no compensating transactions. DLQs capture errors but do not trigger rollback.",
+      "recommendation": "Implement cleanup Lambda triggered by DLQ that removes partial outputs when processing fails.",
+      "severity": "Medium",
+      "priority": "P0",
+      "effort": "High",
+      "phase": 1,
+      "evidence": {"file": "source/lambda/joberrorhandler/lambda_function.py", "lines": "1-30"},
+      "ara_metadata": {
+        "native_severity": "RISK-SAFETY",
+        "safety_impact": true,
+        "conditional_resolution": "Resolved to RISK-SAFETY: agent_scope=read-only, compensation is relevant for system maturity but not a deployment blocker.",
+        "agent_scope": "read-only",
+        "resolution_reasoning": "STATE-Q1 resolves to RISK-SAFETY under read-only scope because agents are not executing write workflows."
+      }
+    },
+    {
+      "question_id": "STATE-Q4",
+      "category": "State Management",
+      "category_id": "STATE",
+      "title": "Circuit Breakers and Resilience",
+      "description": "Application relies on boto3 retry (max_attempts=30) with no circuit breaker pattern, no exponential backoff beyond defaults.",
+      "gap": "No circuit breaker to prevent cascading failures when Textract or Elasticsearch degrades.",
+      "recommendation": "Implement circuit breaker logic for external service calls using circuitbreaker library.",
+      "severity": "Medium",
+      "priority": "P1",
+      "effort": "Medium",
+      "phase": 1,
+      "evidence": {"file": "source/lambda/helper/python/helper.py", "lines": "55-72"},
+      "ara_metadata": {
+        "native_severity": "RISK-SAFETY",
+        "safety_impact": true
+      }
+    },
+    {
+      "question_id": "STATE-Q5",
+      "category": "State Management",
+      "category_id": "STATE",
+      "title": "Rate Limiting and Throttling",
+      "description": "Lambda concurrency (30) provides global throttle. No per-caller rate limiting. API Gateway usage plan explicitly not configured.",
+      "gap": "No per-caller rate limiting. Single caller can consume all capacity.",
+      "recommendation": "Create API Gateway Usage Plan with throttle settings and per-key tracking.",
+      "severity": "Medium",
+      "priority": "P1",
+      "effort": "Low",
+      "phase": 1,
+      "evidence": {"file": "source/lib/cdk-textract-stack.ts", "lines": "525-540"},
+      "ara_metadata": {
+        "native_severity": "RISK-SAFETY",
+        "safety_impact": true
+      }
+    },
+    {
+      "question_id": "DATA-Q1",
+      "category": "Data Accessibility",
+      "category_id": "DATA",
+      "title": "Sensitive Data Classification",
+      "description": "System stores user-uploaded documents. B1 CLEAR (API returns metadata only). B2 fires: no access differentiation — all authenticated users access all documents.",
+      "gap": "No mechanism to restrict document access by caller identity or sensitivity level.",
+      "recommendation": "Add document ownership and implement access filtering in API processor Lambda.",
+      "severity": "Medium",
+      "priority": "P0",
+      "effort": "High",
+      "phase": 1,
+      "evidence": {"file": "source/lambda/helper/python/datastore.py", "lines": "100-120"},
+      "ara_metadata": {
+        "native_severity": "RISK-SAFETY",
+        "safety_impact": true,
+        "conditional_resolution": "Resolved to RISK-SAFETY: agent_scope=read-only. B2 fires because no access differentiation exists.",
+        "agent_scope": "read-only",
+        "resolution_reasoning": "DATA-Q1 B1 is CLEAR (API returns only metadata). B2 fires at RISK-SAFETY because all callers have identical access with no differentiation.",
+        "data_q1_subchecks": {
+          "b1": {"fired": false, "severity": "CLEAR", "reasoning": "API responses return document metadata only (documentId, bucketName, objectName, documentStatus) — no sensitive fields exposed."},
+          "b2": {"fired": true, "severity": "RISK-SAFETY", "reasoning": "All authenticated users have identical access. No OAuth scopes, no role differentiation, no per-user document filtering."},
+          "b3": {"fired": true, "severity": "INFO", "reasoning": "No formal classification metadata (no tags, no annotations, no Macie)."}
+        }
+      }
+    },
+    {
+      "question_id": "DATA-Q2",
+      "category": "Data Accessibility",
+      "category_id": "DATA",
+      "title": "Data Residency and Sovereignty",
+      "description": "Single-region deployment with no residency controls or documentation. User documents could contain regulated data without classification.",
+      "gap": "No data residency awareness. Agent reading documents and sending to cross-region LLM could violate sovereignty requirements.",
+      "recommendation": "Document residency requirements. Add classification at upload. Configure region-local LLM endpoints.",
+      "severity": "Medium",
+      "priority": "P1",
+      "effort": "Medium",
+      "phase": 1,
+      "evidence": {"file": "source/lib/cdk-textract-stack.ts", "lines": "80-120"},
+      "ara_metadata": {
+        "native_severity": "RISK-SAFETY",
+        "safety_impact": true,
+        "conditional_resolution": "Resolved to RISK-SAFETY: agent_scope=read-only, data residency still relevant but lower risk than write-enabled.",
+        "agent_scope": "read-only",
+        "resolution_reasoning": "DATA-Q2 resolves to RISK-SAFETY under read-only scope because the agent could still transmit document data to a cross-region LLM for analysis."
+      }
+    },
+    {
+      "question_id": "DATA-Q6",
+      "category": "Data Accessibility",
+      "category_id": "DATA",
+      "title": "PII Redaction in Logs",
+      "description": "Lambda functions log full request payloads and DynamoDB responses without PII filtering. Document names and metadata logged unmasked.",
+      "gap": "No PII masking or log scrubbing in any Lambda function.",
+      "recommendation": "Implement structured logging with PII filtering using aws-lambda-powertools.",
+      "severity": "Medium",
+      "priority": "P1",
+      "effort": "Medium",
+      "phase": 1,
+      "evidence": {"file": "source/lambda/apiprocessor/lambda_function.py", "lines": "57-58"},
+      "ara_metadata": {
+        "native_severity": "RISK-SAFETY",
+        "safety_impact": true
+      }
+    },
+    {
+      "question_id": "API-Q2",
+      "category": "API Surface",
+      "category_id": "API",
+      "title": "Machine-Readable API Specification",
+      "description": "No OpenAPI, AsyncAPI, GraphQL schema, or Smithy specification files exist. API defined only in CDK code.",
+      "gap": "No machine-readable spec for automated agent tool generation.",
+      "recommendation": "Export OpenAPI spec from deployed API Gateway or generate from CDK annotations.",
+      "severity": "Medium",
+      "priority": "P2",
+      "effort": "Low",
+      "phase": 2,
+      "evidence": null,
+      "ara_metadata": {
+        "native_severity": "RISK-QUALITY",
+        "safety_impact": false
+      }
+    },
+    {
+      "question_id": "API-Q3",
+      "category": "API Surface",
+      "category_id": "API",
+      "title": "Structured Error Responses",
+      "description": "Error responses use unstructured strings with HTTP 200 status regardless of error. No error codes or retryable indicators.",
+      "gap": "Agent cannot programmatically distinguish error types or determine retryability.",
+      "recommendation": "Implement structured error format with proper HTTP status codes and error taxonomy.",
+      "severity": "Medium",
+      "priority": "P2",
+      "effort": "Medium",
+      "phase": 2,
+      "evidence": {"file": "source/lambda/apiprocessor/lambda_function.py", "lines": "130-140"},
+      "ara_metadata": {
+        "native_severity": "RISK-QUALITY",
+        "safety_impact": false
+      }
+    },
+    {
+      "question_id": "HITL-Q3",
+      "category": "Human-in-the-Loop",
+      "category_id": "HITL",
+      "title": "Sandbox/Staging Environment",
+      "description": "No separate staging or sandbox environment. Single deployment stack. No local testing setup.",
+      "gap": "No safe environment for agent testing before production.",
+      "recommendation": "Create a staging CDK context that deploys a separate stack with reduced capacity.",
+      "severity": "Medium",
+      "priority": "P2",
+      "effort": "Medium",
+      "phase": 2,
+      "evidence": {"file": "source/package.json", "lines": "1-20"},
+      "ara_metadata": {
+        "native_severity": "RISK-QUALITY",
+        "safety_impact": false
+      }
+    },
+    {
+      "question_id": "DATA-Q5",
+      "category": "Data Accessibility",
+      "category_id": "DATA",
+      "title": "Temporal Metadata and Freshness",
+      "description": "Documents have UTC timestamps (documentCreatedOn, documentCompletedOn) but no freshness signaling in API responses.",
+      "gap": "No Cache-Control or freshness indicators in API responses.",
+      "recommendation": "Add Last-Modified and Cache-Control response headers.",
+      "severity": "Medium",
+      "priority": "P2",
+      "effort": "Low",
+      "phase": 2,
+      "evidence": {"file": "source/lambda/helper/python/datastore.py", "lines": "35-50"},
+      "ara_metadata": {
+        "native_severity": "RISK-QUALITY",
+        "safety_impact": false
+      }
+    },
+    {
+      "question_id": "DISC-Q1",
+      "category": "Discovery & Documentation",
+      "category_id": "DISC",
+      "title": "Schema Versioning and API Contracts",
+      "description": "No API versioning, no schema files, no breaking change detection in CI.",
+      "gap": "Agent tool schemas can break silently when API changes.",
+      "recommendation": "Add API versioning and breaking change detection in CI pipeline.",
+      "severity": "Medium",
+      "priority": "P2",
+      "effort": "Medium",
+      "phase": 2,
+      "evidence": {"file": "source/lib/cdk-textract-stack.ts", "lines": "510-530"},
+      "ara_metadata": {
+        "native_severity": "RISK-QUALITY",
+        "safety_impact": false
+      }
+    },
+    {
+      "question_id": "OBS-Q1",
+      "category": "Observability",
+      "category_id": "OBS",
+      "title": "Distributed Tracing and Structured Logging",
+      "description": "X-Ray tracing ACTIVE on all Lambdas. API Gateway JSON access logs. But Lambda logs use unstructured print() with no correlation ID.",
+      "gap": "Cannot correlate API Gateway requests with Lambda logs without X-Ray trace lookup.",
+      "recommendation": "Replace print() with aws-lambda-powertools structured logging with trace correlation.",
+      "severity": "Medium",
+      "priority": "P2",
+      "effort": "Medium",
+      "phase": 2,
+      "evidence": {"file": "source/lambda/syncprocessor/lambda_function.py", "lines": "60-70"},
+      "ara_metadata": {
+        "native_severity": "RISK-QUALITY",
+        "safety_impact": false
+      }
+    },
+    {
+      "question_id": "OBS-Q2",
+      "category": "Observability",
+      "category_id": "OBS",
+      "title": "Alerting on Error Rates and Latency",
+      "description": "No CloudWatch alarms configured. No anomaly detection. Passive monitoring only.",
+      "gap": "No automated alerting for agent-impacting degradation.",
+      "recommendation": "Add CloudWatch alarms for API Gateway error rates, Lambda errors, DLQ depth, and P99 latency.",
+      "severity": "Medium",
+      "priority": "P2",
+      "effort": "Low",
+      "phase": 2,
+      "evidence": {"file": "source/lib/cdk-textract-stack.ts", "lines": "1-700"},
+      "ara_metadata": {
+        "native_severity": "RISK-QUALITY",
+        "safety_impact": false
+      }
+    },
+    {
+      "question_id": "ENG-Q1",
+      "category": "Engineering Maturity",
+      "category_id": "ENG",
+      "title": "Infrastructure Governance",
+      "description": "CDK IaC exists. CodePipeline CI/CD exists. No drift detection. No mandatory peer review before deployment.",
+      "gap": "Missing drift detection and review gates for infrastructure changes.",
+      "recommendation": "Add approval stage in CodePipeline and AWS Config drift detection rules.",
+      "severity": "Medium",
+      "priority": "P2",
+      "effort": "Medium",
+      "phase": 2,
+      "evidence": {"file": "deployment/document-understanding-solution.template", "lines": "130-180"},
+      "ara_metadata": {
+        "native_severity": "RISK-QUALITY",
+        "safety_impact": false
+      }
+    },
+    {
+      "question_id": "ENG-Q2",
+      "category": "Engineering Maturity",
+      "category_id": "ENG",
+      "title": "CI/CD with API Contract Testing",
+      "description": "CodePipeline exists but runs minimal tests. No API contract testing or breaking change detection.",
+      "gap": "API breaking changes not caught before deployment.",
+      "recommendation": "Add API integration tests and OpenAPI diff in CI pipeline.",
+      "severity": "Medium",
+      "priority": "P2",
+      "effort": "Medium",
+      "phase": 2,
+      "evidence": {"file": "deployment/document-understanding-solution.template", "lines": "160-210"},
+      "ara_metadata": {
+        "native_severity": "RISK-QUALITY",
+        "safety_impact": false
+      }
+    },
+    {
+      "question_id": "ENG-Q3",
+      "category": "Engineering Maturity",
+      "category_id": "ENG",
+      "title": "Rollback Capability",
+      "description": "No rollback mechanism configured. In-place CDK deployment. Recovery requires new pipeline execution.",
+      "gap": "Cannot quickly roll back broken deployments affecting agent-facing APIs.",
+      "recommendation": "Add deployment monitoring and automatic rollback triggers.",
+      "severity": "Medium",
+      "priority": "P2",
+      "effort": "Medium",
+      "phase": 2,
+      "evidence": {"file": "deployment/document-understanding-solution.template", "lines": "130-180"},
+      "ara_metadata": {
+        "native_severity": "RISK-QUALITY",
+        "safety_impact": false
+      }
+    },
+    {
+      "question_id": "ENG-Q4",
+      "category": "Engineering Maturity",
+      "category_id": "ENG",
+      "title": "API Test Coverage",
+      "description": "Minimal test coverage: 2 Python unit tests. No API tests, no integration tests, no contract tests.",
+      "gap": "Agent-facing API endpoints have no automated test coverage.",
+      "recommendation": "Add comprehensive API test suite using pytest with moto for AWS service mocking.",
+      "severity": "Medium",
+      "priority": "P3",
+      "effort": "High",
+      "phase": 3,
+      "evidence": {"file": "source/test/test_datastore.py", "lines": "1-50"},
+      "ara_metadata": {
+        "native_severity": "RISK-QUALITY",
+        "safety_impact": false
+      }
+    }
+  ],
+  "evaluations": [
+    {"question_id": "API-Q1", "category_id": "API", "title": "Documented API Interface", "status": "pass", "reason": "REST API exists via API Gateway with documented routes."},
+    {"question_id": "API-Q4", "category_id": "API", "title": "Idempotent Write Operations", "status": "pass", "reason": "Evaluated as INFO under read-only scope — no finding emitted as INFO is architectural guidance only for this conditional question."},
+    {"question_id": "API-Q5", "category_id": "API", "title": "Structured Response Format", "status": "pass", "reason": "JSON responses — no concern for agent consumption."},
+    {"question_id": "API-Q6", "category_id": "API", "title": "Asynchronous Operation Support", "status": "pass", "reason": "Async patterns exist (SQS, DDB Streams, status polling)."},
+    {"question_id": "API-Q7", "category_id": "API", "title": "Event Emission for State Changes", "status": "pass", "reason": "INFO finding — internal events exist but no external webhooks. Architectural guidance."},
+    {"question_id": "API-Q8", "category_id": "API", "title": "Rate Limit Documentation and Headers", "status": "pass", "reason": "INFO finding — no rate limit headers. Architectural guidance."},
+    {"question_id": "AUTH-Q1", "category_id": "AUTH", "title": "Machine Identity Authentication", "status": "pass", "reason": "Cognito User Pool + API Gateway COGNITO_USER_POOLS authorizer supports machine identity via programmatic user creation."},
+    {"question_id": "AUTH-Q2", "category_id": "AUTH", "title": "Scoped Permissions (Least Privilege)", "status": "pass", "reason": "Per-Lambda IAM roles demonstrate scope differentiation."},
+    {"question_id": "AUTH-Q5", "category_id": "AUTH", "title": "Credential Management", "status": "pass", "reason": "IAM role-based authentication — no static credentials in code."},
+    {"question_id": "AUTH-Q7", "category_id": "AUTH", "title": "Agent Identity Suspension", "status": "pass", "reason": "Cognito AdminDisableUser API enables immediate identity suspension."},
+    {"question_id": "STATE-Q2", "category_id": "STATE", "title": "Queryable Current State", "status": "pass", "reason": "GET /documents and GET /document expose current state with status field."},
+    {"question_id": "STATE-Q3", "category_id": "STATE", "title": "Concurrency Controls", "status": "pass", "reason": "Evaluated as INFO under read-only scope."},
+    {"question_id": "STATE-Q6", "category_id": "STATE", "title": "Blast Radius and Transaction Limits", "status": "pass", "reason": "Evaluated as INFO under read-only scope."},
+    {"question_id": "STATE-Q7", "category_id": "STATE", "title": "Graceful Degradation Signaling", "status": "not_evaluated_extended", "reason": "Extended question not triggered — no P0 priority set and not on critical path."},
+    {"question_id": "HITL-Q1", "category_id": "HITL", "title": "Draft/Pending State", "status": "pass", "reason": "Evaluated as INFO under read-only scope."},
+    {"question_id": "HITL-Q2", "category_id": "HITL", "title": "Configurable Approval Gates", "status": "pass", "reason": "Evaluated as INFO under read-only scope."},
+    {"question_id": "DATA-Q3", "category_id": "DATA", "title": "Selective Query Support", "status": "pass", "reason": "Pagination (pageSize=25, nextToken) and search filtering exist."},
+    {"question_id": "DATA-Q4", "category_id": "DATA", "title": "Input Validation and Schema Enforcement", "status": "pass", "reason": "Systematic input validation exists at API boundary."},
+    {"question_id": "DATA-Q7", "category_id": "DATA", "title": "Data Quality Awareness", "status": "pass", "reason": "INFO finding — no quality metrics. Architectural guidance."},
+    {"question_id": "DISC-Q2", "category_id": "DISC", "title": "Semantically Meaningful Field Names", "status": "pass", "reason": "Field names are human-readable (documentId, bucketName, objectName, documentStatus)."},
+    {"question_id": "DISC-Q3", "category_id": "DISC", "title": "Data Catalog / Metadata Layer", "status": "pass", "reason": "INFO finding — no data catalog. Architectural guidance."},
+    {"question_id": "OBS-Q3", "category_id": "OBS", "title": "Business Outcome Metrics", "status": "pass", "reason": "INFO finding — no custom business metrics. Architectural guidance."},
+    {"question_id": "ENG-Q5", "category_id": "ENG", "title": "Encryption at Rest", "status": "pass", "reason": "All data stores encrypted: S3 (S3_MANAGED), DynamoDB (SSE), Elasticsearch (KMS), SQS (KMS)."}
+  ],
+  "remediation_roadmap": {
+    "phases": [1, 2, 3],
+    "items": [
+      {
+        "phase": 1,
+        "phase_name": "Safety",
+        "findings": ["AUTH-Q3", "AUTH-Q6", "STATE-Q1", "STATE-Q4", "STATE-Q5", "DATA-Q1", "DATA-Q2", "DATA-Q6"],
+        "summary": "Address RISK-SAFETY findings to enable supervised pilot. Focus on access differentiation, audit logging, rate limiting, and PII protection."
+      },
+      {
+        "phase": 2,
+        "phase_name": "Quality",
+        "findings": ["API-Q2", "API-Q3", "AUTH-Q4", "HITL-Q3", "DATA-Q5", "DISC-Q1", "OBS-Q1", "OBS-Q2", "ENG-Q1", "ENG-Q2", "ENG-Q3"],
+        "summary": "Address RISK-QUALITY findings to improve agent effectiveness. Focus on API documentation, observability, and deployment maturity."
+      },
+      {
+        "phase": 3,
+        "phase_name": "Optimization",
+        "findings": ["ENG-Q4"],
+        "summary": "Address remaining quality findings. Expand test coverage for agent-facing APIs."
+      }
+    ]
+  },
+  "recommended_actions": [
+    {
+      "action": "Implement per-caller access control and rate limiting",
+      "question_ids": ["AUTH-Q3", "DATA-Q1", "STATE-Q5"],
+      "priority": "P1",
+      "effort": "Medium",
+      "rationale": "These three findings share a root cause: all authenticated callers are treated identically. Implementing Cognito groups with role-based access solves action-level auth, data access differentiation, and per-caller rate limiting together."
+    },
+    {
+      "action": "Deploy immutable audit logging with CloudTrail",
+      "question_ids": ["AUTH-Q6"],
+      "priority": "P1",
+      "effort": "Low",
+      "rationale": "CloudTrail with log file validation and S3 object lock provides tamper-evident audit trail for agent actions."
+    },
+    {
+      "action": "Add circuit breakers and structured logging",
+      "question_ids": ["STATE-Q4", "OBS-Q1", "DATA-Q6"],
+      "priority": "P1",
+      "effort": "Medium",
+      "rationale": "Adopting aws-lambda-powertools addresses structured logging, PII filtering, and provides patterns for circuit breaker implementation."
+    },
+    {
+      "action": "Generate and publish OpenAPI specification",
+      "question_ids": ["API-Q2", "API-Q3", "DISC-Q1"],
+      "priority": "P2",
+      "effort": "Low",
+      "rationale": "An OpenAPI spec enables automated agent tool generation and provides the foundation for contract testing and versioning."
+    },
+    {
+      "action": "Establish staging environment and expand test coverage",
+      "question_ids": ["HITL-Q3", "ENG-Q4", "ENG-Q2"],
+      "priority": "P2",
+      "effort": "High",
+      "rationale": "A staging environment enables safe agent testing. API tests validate agent-facing contract stability."
+    }
+  ]
+}

@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>document-understanding-solution - Agentic Readiness Analysis Report</title>
+<style>
+:root{--primary:#232f3e;--accent:#ff9900;--high:#d13212;--medium:#ff9900;--low:#1d8102;--bg:#f8f9fa;--card-bg:#fff;--border:#dee2e6;--text:#16191f;--text-secondary:#687078}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);line-height:1.6}
+.container{max-width:1200px;margin:0 auto;padding:2rem}
+header{background:var(--primary);color:#fff;padding:2rem;margin-bottom:2rem;border-radius:8px}
+header h1{font-size:1.5rem;margin-bottom:0.5rem}
+header .subtitle{color:#aab7b8;font-size:0.9rem}
+.executive-summary{background:var(--card-bg);border:1px solid var(--border);border-radius:8px;padding:1.5rem;margin-bottom:2rem}
+.executive-summary h2{font-size:1.2rem;margin-bottom:1rem}
+.executive-summary p{color:var(--text-secondary);font-size:0.9rem;margin-bottom:0.5rem}
+.overall-analysis{display:flex;align-items:center;gap:1rem;padding:1rem;background:#fff3cd;border:1px solid #ffc107;border-radius:8px;margin:1.5rem 0;font-size:1.1rem;font-weight:600}
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:2rem}
+.stat-card{background:var(--card-bg);border:1px solid var(--border);border-radius:8px;padding:1.5rem;text-align:center}
+.stat-card .value{font-size:2rem;font-weight:700}
+.stat-card .label{color:var(--text-secondary);font-size:0.85rem;margin-top:0.25rem}
+.stat-card.high .value{color:var(--high)}
+.stat-card.medium .value{color:var(--medium)}
+.stat-card.low .value{color:var(--low)}
+.section{background:var(--card-bg);border:1px solid var(--border);border-radius:8px;padding:1.5rem;margin-bottom:1.5rem}
+.section h2{font-size:1.1rem;margin-bottom:1rem;padding-bottom:0.5rem;border-bottom:1px solid var(--border)}
+table{width:100%;border-collapse:collapse;font-size:0.85rem}
+th,td{padding:0.6rem 0.8rem;text-align:left;border-bottom:1px solid var(--border)}
+th{background:#f1f3f5;font-weight:600;color:var(--text-secondary)}
+.badge{display:inline-block;padding:0.2rem 0.6rem;border-radius:4px;font-size:0.75rem;font-weight:600;color:#fff}
+.badge-high{background:var(--high)}
+.badge-medium{background:var(--medium)}
+.badge-low{background:var(--low)}
+.badge-ready{background:var(--low)}
+.badge-needs-work{background:var(--medium)}
+.badge-blocked{background:var(--high)}
+.finding-card{border:1px solid var(--border);border-radius:8px;padding:1.2rem;margin-bottom:1rem;background:#fff}
+.finding-card h3{font-size:0.95rem;margin-bottom:0.75rem;display:flex;justify-content:space-between;align-items:center}
+.finding-card .field{margin-bottom:0.5rem}
+.finding-card .field-label{font-weight:600;font-size:0.8rem;color:var(--text-secondary);text-transform:uppercase;margin-bottom:0.2rem}
+.finding-card .field-value{font-size:0.9rem}
+.finding-card .meta{display:flex;gap:1rem;margin-top:0.75rem;font-size:0.8rem;color:var(--text-secondary)}
+.roadmap-table td:first-child{font-weight:600}
+.deployment-rec{background:#f0f4ff;border:1px solid #b8d4ff;border-radius:8px;padding:1.5rem;margin-top:2rem}
+.deployment-rec h2{margin-bottom:0.5rem}
+footer{text-align:center;padding:2rem;color:var(--text-secondary);font-size:0.8rem}
+@media(max-width:768px){.stats-row{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="container">
+<header>
+<h1>document-understanding-solution - Agentic Readiness Analysis Report</h1>
+<div class="subtitle">2025-07-15 &middot; TypeScript/Python/JavaScript &middot; 14,741 LOC</div>
+</header>
+
+<div class="executive-summary">
+<h2>Executive Summary</h2>
+<p>This report evaluates the agentic readiness of the Document Understanding Solution — a serverless AWS application for document processing using Textract, Comprehend, and Elasticsearch. The analysis examines eight dimensions: API Surface, Authentication &amp; Authorization, State Management, Human-in-the-Loop, Data Accessibility, Discovery &amp; Documentation, Observability, and Engineering Maturity.</p>
+</div>
+
+<div class="overall-analysis">&#x1F7E1; Pilot-Ready (Safety Concerns)</div>
+
+<p style="margin-bottom:1.5rem;font-size:0.9rem;color:var(--text-secondary)">Quick Stats: Total Findings: 31, By Severity: 0 High, 20 Medium, 11 Low</p>
+
+<div class="stats-row">
+<div class="stat-card"><div class="value">31</div><div class="label">Total Findings</div></div>
+<div class="stat-card high"><div class="value">0</div><div class="label">High Severity</div></div>
+<div class="stat-card medium"><div class="value">20</div><div class="label">Medium Severity</div></div>
+<div class="stat-card low"><div class="value">11</div><div class="label">Low Severity</div></div>
+</div>
+
+<div class="section">
+<h2>Repository Details — Technology Stack</h2>
+<table>
+<tr><th>Attribute</th><th>Value</th></tr>
+<tr><td>Language</td><td>TypeScript/Python/JavaScript</td></tr>
+<tr><td>Lines of Code</td><td>14,741</td></tr>
+<tr><td>Framework</td><td>AWS CDK v1 + Next.js 14.1 + Python 3.8 Lambda</td></tr>
+<tr><td>Architecture</td><td>Serverless (API Gateway + Lambda + DynamoDB + S3 + Elasticsearch)</td></tr>
+</table>
+</div>
+
+<div class="section">
+<h2>Findings by Dimension</h2>
+<table>
+<tr><th>Dimension</th><th>Total</th><th>High</th><th>Medium</th><th>Low</th><th>Status</th></tr>
+<tr><td>API Surface</td><td>6</td><td>0</td><td>2</td><td>4</td><td><span class="badge badge-needs-work">Needs Work</span></td></tr>
+<tr><td>Authentication &amp; Authorization</td><td>3</td><td>0</td><td>3</td><td>0</td><td><span class="badge badge-needs-work">Needs Work</span></td></tr>
+<tr><td>State Management</td><td>5</td><td>0</td><td>3</td><td>2</td><td><span class="badge badge-needs-work">Needs Work</span></td></tr>
+<tr><td>Human-in-the-Loop</td><td>3</td><td>0</td><td>1</td><td>2</td><td><span class="badge badge-needs-work">Needs Work</span></td></tr>
+<tr><td>Data Accessibility</td><td>5</td><td>0</td><td>4</td><td>1</td><td><span class="badge badge-needs-work">Needs Work</span></td></tr>
+<tr><td>Discovery &amp; Documentation</td><td>2</td><td>0</td><td>1</td><td>1</td><td><span class="badge badge-needs-work">Needs Work</span></td></tr>
+<tr><td>Observability</td><td>3</td><td>0</td><td>2</td><td>1</td><td><span class="badge badge-needs-work">Needs Work</span></td></tr>
+<tr><td>Engineering Maturity</td><td>4</td><td>0</td><td>4</td><td>0</td><td><span class="badge badge-needs-work">Needs Work</span></td></tr>
+</table>
+</div>
+
+<div class="section">
+<h2>Detailed Findings</h2>
+
+<div class="finding-card">
+<h3>AUTH-Q3: Action-Level Authorization <span class="badge badge-medium">Medium</span></h3>
+<div class="field"><div class="field-label">Finding</div><div class="field-value">All authenticated users share a single IAM role with identical API access. No action-level differentiation at the API surface.</div></div>
+<div class="field"><div class="field-label">Gap</div><div class="field-value">Cannot restrict agent to read operations while allowing humans full CRUD access.</div></div>
+<div class="field"><div class="field-label">Recommendation</div><div class="field-value">Configure Cognito User Pool groups and map them to separate IAM roles via Identity Pool role mapping rules. Apply method-level authorization in API Gateway.</div></div>
+<div class="meta"><span>Effort: Medium</span><span>File: source/lib/cdk-textract-stack.ts</span></div>
+</div>
+
+<div class="finding-card">
+<h3>AUTH-Q4: Identity Propagation and Delegation <span class="badge badge-medium">Medium</span></h3>
+<div class="field"><div class="field-label">Finding</div><div class="field-value">API Gateway extracts Cognito JWT but Lambda functions do not propagate caller identity to downstream service calls.</div></div>
+<div class="field"><div class="field-label">Gap</div><div class="field-value">No identity propagation through internal service calls. Cannot distinguish agent-initiated vs human-initiated operations.</div></div>
+<div class="field"><div class="field-label">Recommendation</div><div class="field-value">Extract sub and email claims from Cognito JWT in API processor Lambda and propagate as metadata through SQS messages and DynamoDB records.</div></div>
+<div class="meta"><span>Effort: Medium</span><span>File: source/lambda/apiprocessor/lambda_function.py</span></div>
+</div>
+
+<div class="finding-card">
+<h3>AUTH-Q6: Immutable Audit Logging <span class="badge badge-medium">Medium</span></h3>
+<div class="field"><div class="field-label">Finding</div><div class="field-value">API Gateway JSON access logging configured but no CloudTrail, no immutable log storage.</div></div>
+<div class="field"><div class="field-label">Gap</div><div class="field-value">Logs are not immutable or tamper-evident. No CloudTrail trail in IaC.</div></div>
+<div class="field"><div class="field-label">Recommendation</div><div class="field-value">Add CloudTrail trail to CDK stack with log file validation and S3 delivery with object lock.</div></div>
+<div class="meta"><span>Effort: Medium</span><span>File: source/lib/cdk-textract-stack.ts</span></div>
+</div>
+
+<div class="finding-card">
+<h3>STATE-Q1: Compensation and Rollback <span class="badge badge-medium">Medium</span></h3>
+<div class="field"><div class="field-label">Finding</div><div class="field-value">Document processing pipeline has no compensation or rollback logic. Failed processing leaves partial state.</div></div>
+<div class="field"><div class="field-label">Gap</div><div class="field-value">No saga pattern, no compensating transactions. DLQs capture errors but do not trigger rollback.</div></div>
+<div class="field"><div class="field-label">Recommendation</div><div class="field-value">Implement cleanup Lambda triggered by DLQ that removes partial outputs when processing fails.</div></div>
+<div class="meta"><span>Effort: High</span><span>File: source/lambda/joberrorhandler/lambda_function.py</span></div>
+</div>
+
+<div class="finding-card">
+<h3>STATE-Q4: Circuit Breakers and Resilience <span class="badge badge-medium">Medium</span></h3>
+<div class="field"><div class="field-label">Finding</div><div class="field-value">Application relies on boto3 retry (max_attempts=30) with no circuit breaker pattern.</div></div>
+<div class="field"><div class="field-label">Gap</div><div class="field-value">No circuit breaker to prevent cascading failures when downstream services degrade.</div></div>
+<div class="field"><div class="field-label">Recommendation</div><div class="field-value">Implement circuit breaker logic for external service calls using circuitbreaker library.</div></div>
+<div class="meta"><span>Effort: Medium</span><span>File: source/lambda/helper/python/helper.py</span></div>
+</div>
+
+<div class="finding-card">
+<h3>STATE-Q5: Rate Limiting and Throttling <span class="badge badge-medium">Medium</span></h3>
+<div class="field"><div class="field-label">Finding</div><div class="field-value">Lambda concurrency (30) provides global throttle only. No per-caller rate limiting. API Gateway usage plan explicitly not configured.</div></div>
+<div class="field"><div class="field-label">Gap</div><div class="field-value">No per-caller rate limiting. Single caller can consume all capacity.</div></div>
+<div class="field"><div class="field-label">Recommendation</div><div class="field-value">Create API Gateway Usage Plan with throttle settings and per-key tracking.</div></div>
+<div class="meta"><span>Effort: Low</span><span>File: source/lib/cdk-textract-stack.ts</span></div>
+</div>
+
+<div class="finding-card">
+<h3>DATA-Q1: Sensitive Data Classification <span class="badge badge-medium">Medium</span></h3>
+<div class="field"><div class="field-label">Finding</div><div class="field-value">System stores user-uploaded documents. No access differentiation — all authenticated users access all documents regardless of ownership.</div></div>
+<div class="field"><div class="field-label">Gap</div><div class="field-value">No mechanism to restrict document access by caller identity or sensitivity level.</div></div>
+<div class="field"><div class="field-label">Recommendation</div><div class="field-value">Add document ownership and implement access filtering in API processor Lambda.</div></div>
+<div class="meta"><span>Effort: High</span><span>File: source/lambda/helper/python/datastore.py</span></div>
+</div>
+
+<div class="finding-card">
+<h3>DATA-Q2: Data Residency and Sovereignty <span class="badge badge-medium">Medium</span></h3>
+<div class="field"><div class="field-label">Finding</div><div class="field-value">Single-region deployment with no residency controls or documentation. User documents could contain regulated data.</div></div>
+<div class="field"><div class="field-label">Gap</div><div class="field-value">No data residency awareness for agent-accessed data.</div></div>
+<div class="field"><div class="field-label">Recommendation</div><div class="field-value">Document residency requirements. Add classification at upload. Configure region-local LLM endpoints.</div></div>
+<div class="meta"><span>Effort: Medium</span><span>File: source/lib/cdk-textract-stack.ts</span></div>
+</div>
+
+<div class="finding-card">
+<h3>DATA-Q6: PII Redaction in Logs <span class="badge badge-medium">Medium</span></h3>
+<div class="field"><div class="field-label">Finding</div><div class="field-value">Lambda functions log full request payloads and DynamoDB responses without PII filtering.</div></div>
+<div class="field"><div class="field-label">Gap</div><div class="field-value">No PII masking or log scrubbing in any Lambda function.</div></div>
+<div class="field"><div class="field-label">Recommendation</div><div class="field-value">Implement structured logging with PII filtering using aws-lambda-powertools.</div></div>
+<div class="meta"><span>Effort: Medium</span><span>File: source/lambda/apiprocessor/lambda_function.py</span></div>
+</div>
+
+<div class="finding-card">
+<h3>API-Q2: Machine-Readable API Specification <span class="badge badge-medium">Medium</span></h3>
+<div class="field"><div class="field-label">Finding</div><div class="field-value">No OpenAPI, AsyncAPI, or schema specification files exist. API defined only in CDK code.</div></div>
+<div class="field"><div class="field-label">Gap</div><div class="field-value">No machine-readable spec for automated agent tool generation.</div></div>
+<div class="field"><div class="field-label">Recommendation</div><div class="field-value">Export OpenAPI spec from deployed API Gateway or generate from CDK annotations.</div></div>
+<div class="meta"><span>Effort: Low</span><span>File: N/A</span></div>
+</div>
+
+<div class="finding-card">
+<h3>API-Q3: Structured Error Responses <span class="badge badge-medium">Medium</span></h3>
+<div class="field"><div class="field-label">Finding</div><div class="field-value">Error responses use unstructured strings. Lambda returns statusCode 200 for all responses.</div></div>
+<div class="field"><div class="field-label">Gap</div><div class="field-value">Agent cannot programmatically distinguish error types or determine retryability.</div></div>
+<div class="field"><div class="field-label">Recommendation</div><div class="field-value">Implement structured error format with proper HTTP status codes and error taxonomy.</div></div>
+<div class="meta"><span>Effort: Medium</span><span>File: source/lambda/apiprocessor/lambda_function.py</span></div>
+</div>
+
+<div class="finding-card">
+<h3>HITL-Q3: Sandbox/Staging Environment <span class="badge badge-medium">Medium</span></h3>
+<div class="field"><div class="field-label">Finding</div><div class="field-value">No separate staging or sandbox environment. Single deployment stack.</div></div>
+<div class="field"><div class="field-label">Gap</div><div class="field-value">No safe environment for agent testing before production.</div></div>
+<div class="field"><div class="field-label">Recommendation</div><div class="field-value">Create a staging CDK context that deploys a separate stack with reduced capacity.</div></div>
+<div class="meta"><span>Effort: Medium</span><span>File: source/package.json</span></div>
+</div>
+
+<div class="finding-card">
+<h3>DATA-Q5: Temporal Metadata and Freshness <span class="badge badge-medium">Medium</span></h3>
+<div class="field"><div class="field-label">Finding</div><div class="field-value">Documents have UTC timestamps but no freshness signaling in API responses.</div></div>
+<div class="field"><div class="field-label">Gap</div><div class="field-value">No Cache-Control or freshness indicators in responses.</div></div>
+<div class="field"><div class="field-label">Recommendation</div><div class="field-value">Add Last-Modified and Cache-Control response headers.</div></div>
+<div class="meta"><span>Effort: Low</span><span>File: source/lambda/helper/python/datastore.py</span></div>
+</div>
+
+<div class="finding-card">
+<h3>DISC-Q1: Schema Versioning and API Contracts <span class="badge badge-medium">Medium</span></h3>
+<div class="field"><div class="field-label">Finding</div><div class="field-value">No API versioning, no schema files, no breaking change detection in CI.</div></div>
+<div class="field"><div class="field-label">Gap</div><div class="field-value">Agent tool schemas can break silently when API changes.</div></div>
+<div class="field"><div class="field-label">Recommendation</div><div class="field-value">Add API versioning and breaking change detection in CI pipeline.</div></div>
+<div class="meta"><span>Effort: Medium</span><span>File: source/lib/cdk-textract-stack.ts</span></div>
+</div>
+
+<div class="finding-card">
+<h3>OBS-Q1: Distributed Tracing and Structured Logging <span class="badge badge-medium">Medium</span></h3>
+<div class="field"><div class="field-label">Finding</div><div class="field-value">X-Ray tracing ACTIVE but Lambda logs use unstructured print() with no correlation ID.</div></div>
+<div class="field"><div class="field-label">Gap</div><div class="field-value">Cannot correlate API Gateway requests with Lambda logs without X-Ray trace lookup.</div></div>
+<div class="field"><div class="field-label">Recommendation</div><div class="field-value">Replace print() with aws-lambda-powertools structured logging with trace correlation.</div></div>
+<div class="meta"><span>Effort: Medium</span><span>File: source/lambda/syncprocessor/lambda_function.py</span></div>
+</div>
+
+<div class="finding-card">
+<h3>OBS-Q2: Alerting on Error Rates and Latency <span class="badge badge-medium">Medium</span></h3>
+<div class="field"><div class="field-label">Finding</div><div class="field-value">No CloudWatch alarms configured. No anomaly detection. Passive monitoring only.</div></div>
+<div class="field"><div class="field-label">Gap</div><div class="field-value">No automated alerting for agent-impacting degradation.</div></div>
+<div class="field"><div class="field-label">Recommendation</div><div class="field-value">Add CloudWatch alarms for API Gateway error rates, Lambda errors, DLQ depth, and P99 latency.</div></div>
+<div class="meta"><span>Effort: Low</span><span>File: source/lib/cdk-textract-stack.ts</span></div>
+</div>
+
+<div class="finding-card">
+<h3>ENG-Q1: Infrastructure Governance <span class="badge badge-medium">Medium</span></h3>
+<div class="field"><div class="field-label">Finding</div><div class="field-value">CDK IaC and CodePipeline CI/CD exist. No drift detection. No mandatory peer review gate.</div></div>
+<div class="field"><div class="field-label">Gap</div><div class="field-value">Missing drift detection and review gates for infrastructure changes.</div></div>
+<div class="field"><div class="field-label">Recommendation</div><div class="field-value">Add approval stage in CodePipeline and AWS Config drift detection rules.</div></div>
+<div class="meta"><span>Effort: Medium</span><span>File: deployment/document-understanding-solution.template</span></div>
+</div>
+
+<div class="finding-card">
+<h3>ENG-Q2: CI/CD with API Contract Testing <span class="badge badge-medium">Medium</span></h3>
+<div class="field"><div class="field-label">Finding</div><div class="field-value">CodePipeline exists but runs minimal tests. No API contract testing or breaking change detection.</div></div>
+<div class="field"><div class="field-label">Gap</div><div class="field-value">API breaking changes not caught before deployment.</div></div>
+<div class="field"><div class="field-label">Recommendation</div><div class="field-value">Add API integration tests and OpenAPI diff in CI pipeline.</div></div>
+<div class="meta"><span>Effort: Medium</span><span>File: deployment/document-understanding-solution.template</span></div>
+</div>
+
+<div class="finding-card">
+<h3>ENG-Q3: Rollback Capability <span class="badge badge-medium">Medium</span></h3>
+<div class="field"><div class="field-label">Finding</div><div class="field-value">No rollback mechanism configured. In-place CDK deployment only.</div></div>
+<div class="field"><div class="field-label">Gap</div><div class="field-value">Cannot quickly roll back broken deployments affecting agent-facing APIs.</div></div>
+<div class="field"><div class="field-label">Recommendation</div><div class="field-value">Add deployment monitoring and automatic rollback triggers.</div></div>
+<div class="meta"><span>Effort: Medium</span><span>File: deployment/document-understanding-solution.template</span></div>
+</div>
+
+<div class="finding-card">
+<h3>ENG-Q4: API Test Coverage <span class="badge badge-medium">Medium</span></h3>
+<div class="field"><div class="field-label">Finding</div><div class="field-value">Minimal test coverage: 2 Python unit tests. No API tests, no integration tests.</div></div>
+<div class="field"><div class="field-label">Gap</div><div class="field-value">Agent-facing API endpoints have no automated test coverage.</div></div>
+<div class="field"><div class="field-label">Recommendation</div><div class="field-value">Add comprehensive API test suite using pytest with moto for AWS service mocking.</div></div>
+<div class="meta"><span>Effort: High</span><span>File: source/test/test_datastore.py</span></div>
+</div>
+
+</div>
+
+<div class="section">
+<h2>Remediation Roadmap</h2>
+<table class="roadmap-table">
+<tr><th>Phase</th><th>Focus</th><th>Findings</th><th>Summary</th></tr>
+<tr><td>1</td><td>Safety</td><td>8</td><td>Address RISK-SAFETY findings: access control, audit logging, rate limiting, PII protection</td></tr>
+<tr><td>2</td><td>Quality</td><td>11</td><td>Improve agent effectiveness: API documentation, observability, deployment maturity</td></tr>
+<tr><td>3</td><td>Optimization</td><td>1</td><td>Expand test coverage for agent-facing APIs</td></tr>
+</table>
+</div>
+
+<div class="section">
+<h2>Recommended Actions</h2>
+<table>
+<tr><th>Action</th><th>Priority</th><th>Effort</th><th>Related Findings</th></tr>
+<tr><td>Implement per-caller access control and rate limiting</td><td>P1</td><td>Medium</td><td>AUTH-Q3, DATA-Q1, STATE-Q5</td></tr>
+<tr><td>Deploy immutable audit logging with CloudTrail</td><td>P1</td><td>Low</td><td>AUTH-Q6</td></tr>
+<tr><td>Add circuit breakers and structured logging</td><td>P1</td><td>Medium</td><td>STATE-Q4, OBS-Q1, DATA-Q6</td></tr>
+<tr><td>Generate and publish OpenAPI specification</td><td>P2</td><td>Low</td><td>API-Q2, API-Q3, DISC-Q1</td></tr>
+<tr><td>Establish staging environment and expand test coverage</td><td>P2</td><td>High</td><td>HITL-Q3, ENG-Q4, ENG-Q2</td></tr>
+</table>
+</div>
+
+<div class="deployment-rec">
+<h2>&#x1F7E1; Pilot-Ready (Safety Concerns)</h2>
+<p>This repository has 0 blocker(s) and 9 safety risk findings. A supervised pilot is possible with elevated safety oversight. Prioritize RISK-SAFETY remediation before expanding agent scope. Restrict agent to lowest-blast-radius read-only operations until safety risks are addressed.</p>
+</div>
+
+<footer>
+<p>Generated by AWS Transform &middot; Agentic Readiness Analysis Report</p>
+<p>&copy; 2025 Amazon Web Services, Inc. All rights reserved.</p>
+</footer>
+</div>
+</body>
+</html>
